@@ -1,16 +1,24 @@
 {
     "technologies": {
         "apis": [
-            "insert apis"
         ],
         "platforms": [
-            "insert platforms"
+            "Chrome Apps",
+            "Google App Engine"
         ],
         "toolkits": [
-            "insert toolkits"
+            "three.js",
+            "webgl"
+        ],
+        "languages": [
+            "javascript",
+            "glsl"
         ]
     },
     "themes": [
-        "insert themes"
+        "inspired by nature",
+        "emotions",
+        "motion",
+        "particles"
     ]
 }
