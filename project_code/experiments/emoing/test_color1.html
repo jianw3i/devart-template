@@ -1,0 +1,83 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+</head>
+<body>
+<style>
+body {
+	width: 100%;
+	height: 100%;
+}
+</style>
+<script src="../libs/three.min.js"></script>
+<script>
+		// touch events
+
+		// var width = innerWidth;
+		// var height = innerHeight;
+
+		var h, s, l;
+		l = 0.5;
+
+		var color = new THREE.Color();
+
+
+		document.addEventListener( 'touchstart', function ( event ) {
+			console.log('touchmove', event);
+
+			if (event.touches.length) {
+				var t = event.touches[0];
+				h = t.pageX / innerWidth;
+				s = t.pageY / innerHeight;
+
+				color.setHSL(h, s, l);
+				hex = color.getHexString();
+				document.body.style.backgroundColor = '#' + hex;
+				event.preventDefault();
+
+			}
+
+
+			
+		}, false );
+
+
+
+		document.addEventListener( 'touchmove', function ( event ) {
+			
+
+			if (event.touches.length) {
+				var t = event.touches[0];
+				h = t.pageX / innerWidth;
+				s = t.pageY / innerHeight;
+				color.setHSL(h, s, l);
+				hex = color.getHexString();
+				document.body.style.backgroundColor = '#' + hex;
+				console.log('#' + hex);
+
+			}
+
+
+			
+		}, false );
+
+		document.addEventListener('mousemove', function(event) {
+			t = event;
+			h = t.pageX / innerWidth;
+				s = t.pageY / innerHeight;
+
+				color.setHSL(h, s, l);
+				hex = color.getHexString();
+				console.log('#' + hex)
+				document.body.style.backgroundColor = '#' + hex;
+
+		});
+
+
+		document.body.style.backgroundColor = '#4422ggg';
+
+		
+</script>
+</body>
+</html>
