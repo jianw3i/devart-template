@@ -3,7 +3,7 @@ Emotions in Motion
 
 ## Authors
 - Joshua Koo, [zz85](https://github.com/zz85)
-- TODO Insert other author(s) name, surname, github account (one per list element)
+- Chinmay Pendharkar, [notthetup](https://github.com/notthetup)
 
 ## Descriptio
 "Emotions in Motion" is an experiment to express humans emotions using motion + art + code.

@@ -8,7 +8,8 @@
         ],
         "toolkits": [
             "three.js",
-            "webgl"
+            "webgl",
+            "webaudioapi"
         ],
         "languages": [
             "javascript",
@@ -19,6 +20,7 @@
         "inspired by nature",
         "emotions",
         "motion",
-        "particles"
+        "particles",
+        "sonic landscapes",
     ]
 }
