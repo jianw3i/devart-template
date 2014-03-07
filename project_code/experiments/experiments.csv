@@ -1,12 +1,10 @@
-Filename	Version	Description
-test_bird	1a	Reduction of Three.js Canvas Flocking Code to a single Bird. Add touch code
-test_bird	1b	Bird Size Adjustment
-test_bird	1c	Add trails
-test_bird	1d	Size Adjustment
-test_bird	1e	Bird Color Section
-test_bird	1f	Playing with lights
-test_bird	1g	Added xgui for color controls
 test_touch	1a/1b	Console logs of touch events for understanding the api (via remote debugging)
 test_color	1	Color picker: by touch controls by coordinates of screen
 test_color	2a	Color picker: experimentation of circle wheel picker
-test_color	2b	
+test_color	2b	tweaking size
+test_color	2c	playing around with animation
+test_color	2d	uses canvas image data
+test_color	2e	test touch
+test_color	2f	tweaking touch ui
+test_swipe	1	testing algorithm for a swipe up gesture
+test_color	2g	resizing color picker for adapt screensizes

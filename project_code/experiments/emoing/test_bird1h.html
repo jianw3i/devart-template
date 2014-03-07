@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js canvas - geometry - birds</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #808080;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #ffffff;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+			}
+
+			#xgui_container {
+				position: absolute;
+				top: 0px;
+				right: 0px;
+			}
+
+
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info"><a href="http://threejs.org" target="_blank">three.js</a> - birds demo </div>
+
+		<script src="../libs/three.min.js"></script>
+		<script src="Bird.js"></script>
+
+		<script src="../libs/stats.min.js"></script>
+
+		<script type="application/javascript" src="../libs/xgui.js"></script>
+		<script>
+
+			// Based on http://www.openprocessing.org/visuals/?visualID=6910
+
+			var Boid = function() {
+
+				var vector = new THREE.Vector3(),
+				_acceleration, _width = 500, _height = 500, _depth = 200, _goal, _neighborhoodRadius = 100,
+				_maxSpeed = 4, _maxSteerForce = 0.1, _avoidWalls = false;
+
+				this.position = new THREE.Vector3();
+				this.velocity = new THREE.Vector3();
+				_acceleration = new THREE.Vector3();
+
+				this.setGoal = function ( target ) {
+
+					_goal = target;
+
+				}
+
+				this.setAvoidWalls = function ( value ) {
+
+					_avoidWalls = value;
+
+				}
+
+				this.setWorldSize = function ( width, height, depth ) {
+
+					_width = width;
+					_height = height;
+					_depth = depth;
+
+				}
+
+				this.run = function ( boids ) {
+
+					if ( _avoidWalls ) {
+
+						vector.set( - _width, this.position.y, this.position.z );
+						vector = this.avoid( vector );
+						vector.multiplyScalar( 5 );
+						_acceleration.add( vector );
+
+						vector.set( _width, this.position.y, this.position.z );
+						vector = this.avoid( vector );
+						vector.multiplyScalar( 5 );
+						_acceleration.add( vector );
+
+						vector.set( this.position.x, - _height, this.position.z );
+						vector = this.avoid( vector );
+						vector.multiplyScalar( 5 );
+						_acceleration.add( vector );
+
+						vector.set( this.position.x, _height, this.position.z );
+						vector = this.avoid( vector );
+						vector.multiplyScalar( 5 );
+						_acceleration.add( vector );
+
+						vector.set( this.position.x, this.position.y, - _depth );
+						vector = this.avoid( vector );
+						vector.multiplyScalar( 5 );
+						_acceleration.add( vector );
+
+						vector.set( this.position.x, this.position.y, _depth );
+						vector = this.avoid( vector );
+						vector.multiplyScalar( 5 );
+						_acceleration.add( vector );
+
+					}/* else {
+
+						this.checkBounds();
+
+					}
+					*/
+
+					if ( Math.random() > 0.5 ) {
+
+						this.flock( boids );
+
+					}
+
+					this.move();
+
+				}
+
+				this.flock = function ( boids ) {
+
+					if ( _goal ) {
+
+						_acceleration.add( this.reach( _goal, 0.005 ) );
+
+					}
+
+					_acceleration.add( this.alignment( boids ) );
+					_acceleration.add( this.cohesion( boids ) );
+					_acceleration.add( this.separation( boids ) );
+
+				}
+
+				this.move = function () {
+
+					this.velocity.add( _acceleration );
+
+					var l = this.velocity.length();
+
+					if ( l > _maxSpeed ) {
+
+						this.velocity.divideScalar( l / _maxSpeed );
+
+					}
+
+					this.position.add( this.velocity );
+					_acceleration.set( 0, 0, 0 );
+
+				}
+
+				this.checkBounds = function () {
+
+					if ( this.position.x >   _width ) this.position.x = - _width;
+					if ( this.position.x < - _width ) this.position.x =   _width;
+					if ( this.position.y >   _height ) this.position.y = - _height;
+					if ( this.position.y < - _height ) this.position.y =  _height;
+					if ( this.position.z >  _depth ) this.position.z = - _depth;
+					if ( this.position.z < - _depth ) this.position.z =  _depth;
+
+				}
+
+				//
+
+				this.avoid = function ( target ) {
+
+					var steer = new THREE.Vector3();
+
+					steer.copy( this.position );
+					steer.sub( target );
+
+					steer.multiplyScalar( 1 / this.position.distanceToSquared( target ) );
+
+					return steer;
+
+				}
+
+				this.repulse = function ( target, neg ) {
+
+					var distance = this.position.distanceTo( target );
+
+					if ( distance < 150 ) {
+
+						var steer = new THREE.Vector3();
+
+						steer.subVectors( this.position, target );
+						steer.multiplyScalar( 0.5 / distance );
+
+						_acceleration.add( steer );
+
+					}
+
+				}
+
+
+				this.follow = function ( target, neg ) {
+
+					var distance = this.position.distanceTo( target );
+
+					// if ( distance < 150 ) {
+
+						var steer = new THREE.Vector3();
+
+						steer.subVectors( this.position, target );
+						steer.multiplyScalar( -0.5 / distance );
+
+						_acceleration.add( steer );
+
+					// }
+
+				}
+
+				this.reach = function ( target, amount ) {
+
+					var steer = new THREE.Vector3();
+
+					steer.subVectors( target, this.position );
+					steer.multiplyScalar( amount );
+
+					return steer;
+
+				}
+
+				this.alignment = function ( boids ) {
+
+					var boid, velSum = new THREE.Vector3(),
+					count = 0;
+
+					for ( var i = 0, il = boids.length; i < il; i++ ) {
+
+						if ( Math.random() > 0.6 ) continue;
+
+						boid = boids[ i ];
+
+						distance = boid.position.distanceTo( this.position );
+
+						if ( distance > 0 && distance <= _neighborhoodRadius ) {
+
+							velSum.add( boid.velocity );
+							count++;
+
+						}
+
+					}
+
+					if ( count > 0 ) {
+
+						velSum.divideScalar( count );
+
+						var l = velSum.length();
+
+						if ( l > _maxSteerForce ) {
+
+							velSum.divideScalar( l / _maxSteerForce );
+
+						}
+
+					}
+
+					return velSum;
+
+				}
+
+				this.cohesion = function ( boids ) {
+
+					var boid, distance,
+					posSum = new THREE.Vector3(),
+					steer = new THREE.Vector3(),
+					count = 0;
+
+					for ( var i = 0, il = boids.length; i < il; i ++ ) {
+
+						if ( Math.random() > 0.6 ) continue;
+
+						boid = boids[ i ];
+						distance = boid.position.distanceTo( this.position );
+
+						if ( distance > 0 && distance <= _neighborhoodRadius ) {
+
+							posSum.add( boid.position );
+							count++;
+
+						}
+
+					}
+
+					if ( count > 0 ) {
+
+						posSum.divideScalar( count );
+
+					}
+
+					steer.subVectors( posSum, this.position );
+
+					var l = steer.length();
+
+					if ( l > _maxSteerForce ) {
+
+						steer.divideScalar( l / _maxSteerForce );
+
+					}
+
+					return steer;
+
+				}
+
+				this.separation = function ( boids ) {
+
+					var boid, distance,
+					posSum = new THREE.Vector3(),
+					repulse = new THREE.Vector3();
+
+					for ( var i = 0, il = boids.length; i < il; i ++ ) {
+
+						if ( Math.random() > 0.6 ) continue;
+
+						boid = boids[ i ];
+						distance = boid.position.distanceTo( this.position );
+
+						if ( distance > 0 && distance <= _neighborhoodRadius ) {
+
+							repulse.subVectors( this.position, boid.position );
+							repulse.normalize();
+							repulse.divideScalar( distance );
+							posSum.add( repulse );
+
+						}
+
+					}
+
+					return posSum;
+
+				}
+
+			}
+
+		</script>
+
+		<script>
+
+			var SCREEN_WIDTH = window.innerWidth,
+			SCREEN_HEIGHT = window.innerHeight,
+			SCREEN_WIDTH_HALF = SCREEN_WIDTH  / 2,
+			SCREEN_HEIGHT_HALF = SCREEN_HEIGHT / 2;
+
+			var camera, scene, renderer,
+			birds, bird;
+
+			var boid, boids;
+
+			var stats;
+
+			var lines;
+
+			var k;
+			h = Math.random();
+			s = Math.random();
+
+
+
+
+
+
+			var expand = 4;
+			var gui = new xgui( {width: 240, height: 260} );
+			// var gui = new xgui( {width: 640, height: 260, backgroundColor: "rgb(65, 104, 137)", frontColor: "rgb(153, 193, 226)", dimColor: "rgb(90, 137, 177)"} );
+			// var gui = new xgui( {width: 640, height: 260, backgroundColor: "#000000", frontColor: "#ffffff", dimColor: "#333333"} );
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 40, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 10000 );
+				camera.position.z = 550;
+
+				scene = new THREE.Scene();
+
+				birds = [];
+				boids = [];
+
+				for ( var i = 0; i < 1; i ++ ) {
+
+					boid = boids[ i ] = new Boid();
+					boid.position.x = Math.random() * 400 - 200;
+					boid.position.y = Math.random() * 400 - 200;
+					boid.position.z = Math.random() * 400 - 200;
+					boid.velocity.x = Math.random() * 2 - 1;
+					boid.velocity.y = Math.random() * 2 - 1;
+					boid.velocity.z = Math.random() * 2 - 1;
+					boid.setAvoidWalls( true );
+					boid.setWorldSize( 500, 500, 400 );
+
+					b = new Bird()
+					b.applyMatrix( new THREE.Matrix4().makeScale( expand, expand, expand ) );
+
+					bird = birds[ i ] = new THREE.Mesh(b , new THREE.MeshLambertMaterial( { color:Math.random() * 0xffffff, transparent: true,
+						side: THREE.DoubleSide, opacity: 0.9,
+						// wireframe: true
+						// shading: THREE.FlatShading, overdraw: true 
+
+					 } ) );
+					bird.phase = Math.floor( Math.random() * 62.83 );
+					bird.position = boids[ i ].position;
+
+
+					
+					scene.add( bird );
+
+
+				}
+
+
+				scene.add( new THREE.AmbientLight(0x333333) ); // tint
+
+				// light1 = new THREE.PointLight( 0xff0040, 1, 550 );
+				// scene.add( light1 );
+
+				// light2 = new THREE.PointLight( 0x0040ff, 1, 550 );
+				// scene.add( light2 );
+
+				// light3 = new THREE.PointLight( 0x80ff80, 1, 550 );
+				// scene.add( light3 );
+
+				var directionalLight = new THREE.DirectionalLight(  0xffffff, 0.8 ); // Math.random() *
+				directionalLight.position.x = 0.2;
+				directionalLight.position.y = 0.6;
+				directionalLight.position.z = 0.6;
+				directionalLight.position.normalize();
+				scene.add( directionalLight );
+
+
+				lines = new THREE.Geometry();
+
+				for ( var i = 0; i < 200; i ++ ) {
+
+					p = new THREE.Vector3()
+					// p.x = Math.random() * 2 - 1;
+					// p.y = Math.random() * 2 - 1;
+					// p.z = Math.random() * 2 - 1;
+					// p.normalize();
+					// p.multiplyScalar( Math.random() * 10 + 450 );
+					lines.vertices.push( p );
+
+				}
+
+				// lines
+
+				var line = new THREE.Line( lines, new THREE.LineBasicMaterial( { color: 0xaaaaaa, opacity: 0.5 } ) );
+				scene.add( line );
+
+				renderer = new THREE.CanvasRenderer();
+				renderer.setClearColor( 0xffffff );
+				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+
+
+				dom = renderer.domElement;
+
+				dom.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				dom.addEventListener( 'touchmove', onTouchMove, false );
+				document.body.appendChild( dom );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.left = '0px';
+				stats.domElement.style.top = '0px';
+
+
+				var slider = new gui.HSlider( {x: 100, y: 50, width: 170, value: directionalLight.position.x, min:-1, max:1, decimals: 2,
+				height:20} );
+				slider.value.bind(directionalLight.position, "x");
+
+
+				slider = new gui.HSlider( {x: 100, y: 80, width: 170, value: directionalLight.position.y, min:-1, max:1, decimals: 2,
+				height:20} );
+				slider.value.bind(directionalLight.position, "y");
+
+				slider = new gui.HSlider( {x: 100, y: 110, width: 170, value: directionalLight.position.z, min:-1, max:1, decimals: 2,
+				height:20} );
+				slider.value.bind(directionalLight.position, "z");
+
+				var cp0 = new gui.ColorPicker( {x: 100, y: 140, width: 170, height: 50, framewidth:10, frameheight:20 } );
+				cp0.value.bind( function(value, down) {
+    				// console.log('test', arguments);
+
+    				color.set('#' + value);
+					hsl = color.getHSL();
+					h = hsl.h;
+					s = hsl.s;
+
+    			} )
+
+				var dom = gui.getDomElement();
+				dom.style.position = 'absolute';
+
+
+				
+
+				var isTouchDevice = ('ontouchstart' in info);
+
+				isTouchDevice = (navigator.userAgent.match(/ipad|iphone|android/i) != null);
+				info.innerHTML += isTouchDevice 
+
+
+			 // || (navigator.userAgent.match(/ipad|iphone|android/i) != null);
+
+
+				
+				// add to dom
+				document.body.appendChild( dom );
+
+				document.getElementById( 'container' ).appendChild(stats.domElement);
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+
+			var vector = new THREE.Vector3(  );
+
+
+
+			function onDocumentMouseMove( event ) {
+
+				vector.set( event.clientX - SCREEN_WIDTH_HALF, - event.clientY + SCREEN_HEIGHT_HALF, 0 );
+
+				reactBird();
+
+			}
+
+
+			function reactBird() {
+
+				for ( var i = 0, il = boids.length; i < il; i++ ) {
+
+					boid = boids[ i ];
+
+					vector.z = boid.position.z;
+
+					boid.follow( vector );
+
+
+
+
+				}
+
+			}
+
+			function onTouchMove( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					
+					vector.set( event.touches[ 0 ].pageX - SCREEN_WIDTH_HALF, - event.touches[ 0 ].pageY + SCREEN_HEIGHT_HALF, 0 );
+
+					reactBird();
+
+				}
+
+			}
+
+			function onDocumentTouchMove( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
+
+				}
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+
+			function render() {
+
+				for ( var i = 0, il = birds.length; i < il; i++ ) {
+
+					boid = boids[ i ];
+					boid.run( boids );
+
+					bird = birds[ i ];
+
+					color = bird.material.color;
+					k = ( 500 - bird.position.z ) / 1000;
+					// k = 0.8;
+
+					// color.r = color.g = color.b = k;
+					color.setHSL(h, s, k);
+
+					bird.rotation.y = Math.atan2( - boid.velocity.z, boid.velocity.x );
+					bird.rotation.z = Math.asin( boid.velocity.y / boid.velocity.length() );
+
+					bird.phase = ( bird.phase + ( Math.max( 0, bird.rotation.z ) + 0.1 )  ) % 62.83;
+					bird.geometry.vertices[ 5 ].y = bird.geometry.vertices[ 4 ].y = Math.sin( bird.phase ) * 5 * expand;
+
+
+					// if (Math.random() < 0.2) {
+					lines.vertices.push(bird.position.clone());
+					lines.vertices.shift();
+					// }
+
+				}
+
+
+				var time = Date.now() * 0.0005;
+
+				// light1.position.x = Math.sin( time * 0.7 ) * 300;
+				// light1.position.y = Math.cos( time * 0.5 ) * 400;
+				// light1.position.z = Math.cos( time * 0.3 ) * 300;
+
+				// light2.position.x = Math.cos( time * 0.3 ) * 300;
+				// light2.position.y = Math.sin( time * 0.5 ) * 400;
+				// light2.position.z = Math.sin( time * 0.7 ) * 300;
+
+				// light3.position.x = Math.sin( time * 0.7 ) * 300;
+				// light3.position.y = Math.cos( time * 0.3 ) * 400;
+				// light3.position.z = Math.sin( time * 0.5 ) * 300;
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>

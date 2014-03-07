@@ -1,0 +1,141 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+</head>
+<body>
+<style>
+body {
+	width: 100%;
+	height: 100%;
+}
+</style>
+<script src="../libs/three.min.js"></script>
+<script>
+
+		var width = innerWidth;
+		var height = innerHeight;
+
+
+		var canvas = document.createElement('canvas');
+		canvas.width = width;
+		canvas.height = height;
+
+		document.body.appendChild(canvas);
+
+
+
+		var ctx = canvas.getContext('2d');
+		var imageData = ctx.getImageData(0, 0, width, height);
+		var data = imageData.data;
+
+		var h, s, l;
+		l = 0.5;
+
+		var color = new THREE.Color();
+
+		ctx.fillStyle = 'red';
+		ctx.fillRect( 100, 100, 2, 2 );
+
+
+		var r, a, r2;
+
+		r = 0;
+		var ad = 1000, rd = 200;
+
+		function draw() {
+
+			d = Date.now() / 800
+
+			// for (a=0; a<ad; a++) {
+
+			// 	for (r = 180; r < rd; r++) {
+
+			// 		x = Math.cos( a / ad * 2 * Math.PI + d ) * r;
+			// 		y = Math.sin( a / ad * 2 * Math.PI + d ) * r;
+					
+			// 		h = a / ad;
+			// 		s = r / rd;
+			// 		color.setHSL(h, s, l);
+			// 		hex = color.getHexString();
+
+			// 		ctx.fillStyle = '#' + hex;
+
+			// 		ctx.fillRect( x + 400 , y + 400, 1, 1 );
+			// 	}
+
+			// }
+
+			var offset = 0;
+			var midx = 400;
+			var midy = 400;
+			var radius = 200;
+
+			for (h=0;h<height;h++) {
+				for (w=0;w<width;w++) {
+					offset = (h * width + w) * 4;
+
+					dx = midx - w;
+					dy = midy - h;
+					distance = Math.sqrt( dx * dx + dy * dy );
+
+					if (distance > radius) continue;
+
+					hue = Math.atan2(dy, dx) / Math.PI / 2 + 0.5;
+					s = distance / radius;
+
+					color.setHSL(hue, s, l);
+
+					data[ offset + 0 ] = color.r * 255;
+					data[ offset + 1 ] = color.g * 255;
+					data[ offset + 2 ] = color.b * 255;
+					data[ offset + 3 ] = 255;
+
+
+
+				}
+			}
+
+			ctx.putImageData(imageData, 0, 0);
+
+
+		}
+
+
+
+		// setInterval(draw, 40);
+
+		draw();
+
+
+		// document.addEventListener( 'touchstart', function ( event ) {
+		// 	console.log('touchmove', event);
+
+		// 	if (event.touches.length) {
+		// 		var t = event.touches[0];
+		// 		h = t.pageX / innerWidth;
+		// 		s = t.pageY / innerHeight;
+		// 		color.setHSL(h, s, l);
+		// 		hex = color.getHexString();
+		// 		document.body.style.backgroundColor = '#' + hex;
+		// 		event.preventDefault();
+		// 	}
+		// }, false );
+
+
+
+		// document.addEventListener( 'touchmove', function ( event ) {
+		// 	if (event.touches.length) {
+		// 		var t = event.touches[0];
+		// 		h = t.pageX / innerWidth;
+		// 		s = t.pageY / innerHeight;
+		// 		color.setHSL(h, s, l);
+		// 		hex = color.getHexString();
+		// 		document.body.style.backgroundColor = '#' + hex;
+		// 		console.log('#' + hex);
+		// 	}
+		// }, false );
+		
+</script>
+</body>
+</html>
