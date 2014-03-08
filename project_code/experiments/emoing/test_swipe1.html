@@ -62,10 +62,10 @@ var start;
 				var dy = t.pageY - start.y;
 
 				var px = dx / innerWidth * 100;
-				var py = dy / innerHeight * 100;
+				var py = Math.abs(dy) / innerHeight * 100;
 				var endy = t.pageY / innerHeight;
 
-				var swipeUp = endy < 0.01 && dt < 1.5 && py < 50;
+				var swipeUp = endy < 0.01 && dt < 1.5 && py > 50 && dy < 0;;
 
 				showSwipe( dt + "s <br/>x:" + px + " <br/>y:" +  py + " <br/>endy:" + endy +  " <br/>SWIPED:" + swipeUp )
 
