@@ -1,0 +1,3 @@
+[submodule "project_code/experiments/birds"]
+	path = project_code/experiments/birds
+	url = https://github.com/notthetup/birds.git
