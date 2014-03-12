@@ -61,7 +61,7 @@
 		<script src="js/postprocessing/MaskPass.js"></script>
 		<script src="js/postprocessing/SavePass.js"></script>
 
-		<script src="SimulationRenderer2d.js"></script>
+		<script src="SimulationRenderer2e.js"></script>
 
 
 		<!-- pass through vertex shader -->
@@ -211,6 +211,8 @@
 			uniform sampler2D textureVelocity;
 			uniform sampler2D texturePosition;
 
+			uniform sampler2D birdColors;			
+
 			const float width = WIDTH;
 			const float height = WIDTH;
 
@@ -246,6 +248,8 @@
 
 				vec3 selfPosition = texture2D( texturePosition, uv ).xyz;
 				vec3 selfVelocity = texture2D( textureVelocity, uv ).xyz;
+
+				if (texture2D( birdColors, uv ).a < 1.) discard;
 
 				float dist;
 				vec3 dir; // direction
@@ -297,8 +301,11 @@
 						if (
 							x == gl_FragCoord.x && y == gl_FragCoord.y) continue;
 
-						birdPosition = texture2D( texturePosition,
-							vec2( (x + 0.5) / resolution.x, (y+0.5) / resolution.y ) ).xyz;
+
+						vec2 ref = vec2( (x + 0.5) / resolution.x, (y + 0.5) / resolution.y );
+						if (texture2D( birdColors, ref ).a < 1.) continue;
+
+						birdPosition = texture2D( texturePosition, ref ).xyz;
 
 						dir = birdPosition - selfPosition;
 						dist = length(dir);
@@ -325,7 +332,7 @@
 								float threshDelta = alignmentThresh - separationThresh;
 								float adjustedPercent = ( percent - separationThresh ) / threshDelta;
 
-								birdVelocity = texture2D( textureVelocity, vec2((x + 0.5)/resolution.x, (y+0.5)/resolution.y) ).xyz;
+								birdVelocity = texture2D( textureVelocity, ref ).xyz;
 								
 								f = ( 0.5 - cos( adjustedPercent * PI_2 ) * 0.5 + 0.5 ) * delta;
 								velocity += normalize(birdVelocity) * f;
@@ -459,7 +466,6 @@
 				// gl_FragColor = vec4( z2, z2, z2, 1. );
 				if (vColor.a == 0.) {
 					discard;
-					return;
 				}
 
 
@@ -699,7 +705,7 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild( renderer.domElement );
 
-				renderer.setClearColor( scene.fog.color, 1 );
+				// renderer.setClearColor( scene.fog.color, 1 );
 				renderer.autoClear = true;
 
 				initPostProcessing();
@@ -776,7 +782,7 @@
 				initBirds();
 
 
-				birdUniforms.birdColors.value = simulator.rtColors;
+				birdUniforms.birdColors.value = simulator.dtColors;
 
 
 				// var ambient = new THREE.AmbientLight( 0x444444 );
@@ -927,6 +933,13 @@
 				// camera.position.set(pixels32[4], pixels32[5], pixels32[6]);
 				// camera.lookAt(target);
 
+				// camera.position.copy(target);
+				// tmp.set(0, 0, 0);
+				// camera.lookAt(tmp);
+
+				// camera.position.set(0, 0, 0);
+				// camera.lookAt(target);
+
 				if (!paused) {
 					simulator.simulate( delta );
 
@@ -958,6 +971,24 @@
 			function onMouseUp() {
 				// simulator.velocityUniforms.testing.value = 1;
 			}
+
+
+
+			function showBirds(index, show) {
+				
+				simulator.dtColors.image.data[index * 4 + 3] = show ? 1 : 0;
+				simulator.dtColors.needsUpdate = true;
+
+			}
+
+			var kkk = 0;
+
+			setInterval(function() {
+				if (kkk < PARTICLES) {
+					showBirds(kkk++, true);
+				}
+
+			}, 800);
 
 
 

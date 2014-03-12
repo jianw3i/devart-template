@@ -54,7 +54,7 @@ function SimulationRenderer(WIDTH, renderer) {
 			delta: { type: "f", value: 0.0 },
 			resolution: { type: "v2", value: new THREE.Vector2( WIDTH, WIDTH ) },
 			texturePosition: { type: "t", value: null },
-			textureVelocity: { type: "t", value: null },
+			textureVelocity: { type: "t", value: null }
 		},
 		vertexShader: document.getElementById( 'vertexShader' ).textContent,
 		fragmentShader: document.getElementById( 'fragmentShaderPosition' ).textContent
@@ -76,7 +76,8 @@ function SimulationRenderer(WIDTH, renderer) {
 			alignmentDistance: { type: "f", value: 1.0 },
 			cohesionDistance: { type: "f", value: 1.0 },
 			freedomFactor: { type: "f", value: 1.0 },
-			predator: { type: "v3", value: new THREE.Vector3() }
+			predator: { type: "v3", value: new THREE.Vector3() },
+			birdColors: { type: 't', value: null }
 		},
 		defines: {
 			WIDTH: WIDTH.toFixed(2)
@@ -131,10 +132,12 @@ function SimulationRenderer(WIDTH, renderer) {
 		var dtVelocity = generateVelocityTexture();
 
 		dtColors = generateColorTexture();
+
 		console.log('dtColors', dtColors);
-		rtColors = getRenderTarget( THREE.RGBAFormat );
-		simulator.renderTexture(dtColors, rtColors);
-		this.rtColors = rtColors;
+		// rtColors = getRenderTarget( THREE.RGBAFormat );
+		// simulator.renderTexture(dtColors, rtColors);
+		this.dtColors = dtColors;
+		velocityShader.uniforms.birdColors.value = dtColors;
 
 		rtPosition1 = getRenderTarget( THREE.RGBAFormat );
 		rtPosition2 = rtPosition1.clone();
@@ -274,11 +277,11 @@ function SimulationRenderer(WIDTH, renderer) {
 
 		for ( var k = 0; k < PARTICLES * 4; k += 4 ) {
 
-			c.setHSL(Math.random(), Math.random(), 0.5);
+			c.setHSL(Math.random(), Math.random(), 0.7);
 			a[ k + 0 ] = c.r;
 			a[ k + 1 ] = c.g;
 			a[ k + 2 ] = c.b;
-			a[ k + 3 ] = k < PARTICLES * 2 ? 1 : 0;
+			a[ k + 3 ] = 0; //k < PARTICLES * 2 ? 1 : 0;
 
 		}
 

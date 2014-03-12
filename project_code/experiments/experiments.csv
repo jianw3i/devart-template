@@ -16,7 +16,6 @@ test_color	2e	test touch
 test_color	2f	tweaking touch ui
 test_swipe	1	testing algorithm for a swipe up gesture
 test_color	2g	resizing color picker for adapt screensizes
-		
 test_gpu_birds	1a	Import three.js gpu birds
 test_gpu_birds	1b	Tweak steering controls probability
 test_gpu_birds	1c	Add random colors
@@ -27,3 +26,8 @@ test_gpu_birds	2b	start gpu-js readpixels
 test_gpu_birds	2c	follow camera
 test_gpu_birds	2c2	follow camera with stabilzation
 test_gpu_birds	2d	Attempt discard birds
+test_gpu_birds	2e	Incremental bird insertation to GPU
+test_gpu_birds	2e2	Camera follows first bird
+test_gpu_birds	2e3	Camera follows first bird from the center
+test_gpu_birds	2f	Initial Integration with Flocking sounds
+		Toon Pixel Shader

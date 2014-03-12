@@ -61,7 +61,10 @@
 		<script src="js/postprocessing/MaskPass.js"></script>
 		<script src="js/postprocessing/SavePass.js"></script>
 
-		<script src="SimulationRenderer2d.js"></script>
+		<script src="SimulationRenderer2f.js"></script>
+
+		<script src="../birds/bird.js"></script>
+		<script src="../birds/flock.js"></script>
 
 
 		<!-- pass through vertex shader -->
@@ -211,6 +214,8 @@
 			uniform sampler2D textureVelocity;
 			uniform sampler2D texturePosition;
 
+			uniform sampler2D birdColors;			
+
 			const float width = WIDTH;
 			const float height = WIDTH;
 
@@ -246,6 +251,8 @@
 
 				vec3 selfPosition = texture2D( texturePosition, uv ).xyz;
 				vec3 selfVelocity = texture2D( textureVelocity, uv ).xyz;
+
+				if (texture2D( birdColors, uv ).a < 1.) discard;
 
 				float dist;
 				vec3 dir; // direction
@@ -283,6 +290,8 @@
 				// if (testing == 0.0) {}
 				// if ( rand( uv + time ) < freedomFactor ) {}
 
+				//
+
 
 				// Attract flocks to the center
 				vec3 central = vec3( 0., 0., 0. );
@@ -297,8 +306,11 @@
 						if (
 							x == gl_FragCoord.x && y == gl_FragCoord.y) continue;
 
-						birdPosition = texture2D( texturePosition,
-							vec2( (x + 0.5) / resolution.x, (y+0.5) / resolution.y ) ).xyz;
+
+						vec2 ref = vec2( (x + 0.5) / resolution.x, (y + 0.5) / resolution.y );
+						if (texture2D( birdColors, ref ).a < 1.) continue;
+
+						birdPosition = texture2D( texturePosition, ref ).xyz;
 
 						dir = birdPosition - selfPosition;
 						dist = length(dir);
@@ -325,7 +337,7 @@
 								float threshDelta = alignmentThresh - separationThresh;
 								float adjustedPercent = ( percent - separationThresh ) / threshDelta;
 
-								birdVelocity = texture2D( textureVelocity, vec2((x + 0.5)/resolution.x, (y+0.5)/resolution.y) ).xyz;
+								birdVelocity = texture2D( textureVelocity, ref ).xyz;
 								
 								f = ( 0.5 - cos( adjustedPercent * PI_2 ) * 0.5 + 0.5 ) * delta;
 								velocity += normalize(birdVelocity) * f;
@@ -459,7 +471,6 @@
 				// gl_FragColor = vec4( z2, z2, z2, 1. );
 				if (vColor.a == 0.) {
 					discard;
-					return;
 				}
 
 
@@ -477,6 +488,13 @@
 		<script>
 
 			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var ac;
+			window.AudioContext = window.AudioContext || window.webkitAudioContext;
+			if (window.AudioContext) ac = new AudioContext();
+			var type = "speckled-throated-spew";
+			var flock = new flock(ac, 5, type);
+
 
 			var hash = document.location.hash.substr( 1 );
 			if (hash) hash = parseInt(hash, 0);
@@ -699,7 +717,7 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild( renderer.domElement );
 
-				renderer.setClearColor( scene.fog.color, 1 );
+				// renderer.setClearColor( scene.fog.color, 1 );
 				renderer.autoClear = true;
 
 				initPostProcessing();
@@ -776,7 +794,7 @@
 				initBirds();
 
 
-				birdUniforms.birdColors.value = simulator.rtColors;
+				birdUniforms.birdColors.value = simulator.dtColors;
 
 
 				// var ambient = new THREE.AmbientLight( 0x444444 );
@@ -927,11 +945,29 @@
 				// camera.position.set(pixels32[4], pixels32[5], pixels32[6]);
 				// camera.lookAt(target);
 
+				// camera.position.copy(target);
+				// tmp.set(0, 0, 0);
+				// camera.lookAt(tmp);
+
+				// camera.position.set(0, 0, 0);
+				// camera.lookAt(target);
+
 				if (!paused) {
 					simulator.simulate( delta );
 
 					birdUniforms.texturePosition.value = simulator.currentPosition;
 					birdUniforms.textureVelocity.value = simulator.currentVelocity;
+
+					// flock.position.x = tmpPosition.x;
+					// flock.position.y = tmpPosition.y;
+					// flock.position.z = tmpPosition.z;
+					// flock.velocity.x = tmpVelocity.x;
+					// flock.velocity.y = tmpVelocity.y;
+					// flock.velocity.z = tmpVelocity.z;
+
+					if (Math.random() < 0.05) {
+						flock.chirp();
+					}
 				}
 
 
@@ -958,6 +994,24 @@
 			function onMouseUp() {
 				// simulator.velocityUniforms.testing.value = 1;
 			}
+
+
+
+			function showBirds(index, show) {
+				
+				simulator.dtColors.image.data[index * 4 + 3] = show ? 1 : 0;
+				simulator.dtColors.needsUpdate = true;
+
+			}
+
+			var kkk = 0;
+
+			setInterval(function() {
+				if (kkk < PARTICLES) {
+					showBirds(kkk++, true);
+				}
+
+			}, 80);
 
 
 
