@@ -1,6 +1,7 @@
 {
     "technologies": {
         "apis": [
+            "google web fonts"
         ],
         "platforms": [
             "Chrome Apps",
