@@ -96,14 +96,20 @@
 */
 
 		#screen0 {
-			/*display: none;*/
 		}
 
 		#screen1 {
-			display: none;
 			position: absolute;
 			top: 0;
 			left: 0;
+		}
+
+		#screen2 {
+			
+		}
+
+		.screens {
+			display: none;
 		}
 
 
@@ -111,19 +117,19 @@
 		</style>
 	</head>
 	<body>
-	<div id="screen0">
+	<div id="screen0" class="screens">
 		<div class="question">How are you <b>feeling?</b></div>
 		<div class="action" id="begin">Begin</div>
 	</div>
 
 
-	<div id="screen1">
+	<div id="screen1" class="screens">
 		<div class="question">Find your color</div>
 		<div class="action" id="screen1-done">Done</div>
 	</div>
 
-	<div id="screen2">
-		
+	<div id="screen2" class="screens">
+		<div class="question" id="prompt">Swipe up to release bird</div>
 	</div>
 
 
@@ -461,11 +467,10 @@
 			h = Math.random();
 			s = Math.random();
 
-
-
-
 			var expand = 4;
-			
+			var currentScene = 0;
+			var scenes = [];
+
 			setupScenes();
 			init();
 			animate();
@@ -476,7 +481,7 @@
 
 				screen0done.addEventListener('click', function(e) {
 
-					 gotoScreen1();
+					 gotoScreen(1);
 
 				});
 
@@ -484,13 +489,62 @@
 
 				screen1done.addEventListener('click', function(e) {
 
-					 gotoScreen2();
+					gotoScreen(2);
 
 				});
 
+				// Todo: splash screen.
+				// Prompt name, email, twitter?
 
-				// gotoScreen1();
-				
+				scenes[0] = {
+					load: function() {
+						document.getElementById('screen0').style.display = 'block';
+						
+						// show wireframed bird
+						bird.material = wireframe;
+						camera.setLens(40)
+
+						// Swipe or tap to continue
+						// Tween
+
+						// Animate to next screen
+					},
+
+					unload: function() {
+						document.getElementById('screen0').style.display = 'none';
+					}
+				}
+
+				scenes[1] = {
+					load: function() {
+						// Show color picker
+						colorPicker.setEnabled( true );
+						camera.setLens(140);
+						bird.material = lambert;
+						document.getElementById('screen1').style.display = 'block';
+					},
+
+					unload: function() {
+						colorPicker.setEnabled( false );
+						document.getElementById('screen1').style.display = 'none';
+					}
+				}
+
+				scenes[2] = {
+					load: function() {
+						// Show bird with color
+						bird.position.set(0, 0, 0);
+						camera.lookAt(bird.position)
+						camera.setLens(24);
+						document.getElementById('screen2').style.display = 'block';
+
+						// Hint Swipe
+					},
+
+					unload: function() {
+						document.getElementById('screen2').style.display = 'none';
+					}
+				}
 
 			}
 
@@ -625,6 +679,10 @@
 					bird.material.color.copy(c);
 				} );
 
+				// Start
+
+				gotoScreen(0);
+
 			}
 
 			function onWindowResize() {
@@ -704,93 +762,19 @@
 
 			}
 
-			function gotoHome() {
-				// Swipe to continue
-				// Type name? Twitter?
-			}
-
-			// unload, load
-
-			var scenes = [];
-
-			scenes[0] = {
-				load: function() {
-					document.getElementById('screen0').style.display = 'block';
-					// show wireframed bird
-					// Swipe or tap to continue
-					// Tween
-
-					// Animate to next screen
-				},
-
-				unload: function() {
-					document.getElementById('screen0').style.display = 'none';
-				}
-			}
-
-			scenes[1] = {
-				load: function() {
-					// Show color picker
-					colorPicker.setEnabled( true );
-					camera.setLens(140);
-					bird.material = lambert;
-					document.getElementById('screen1').style.display = 'block';
-				},
-
-				unload: function() {
-					colorPicker.setEnabled( false );
-					document.getElementById('screen1').style.display = 'none';
-				}
-			}
-
-			scenes[2] = {
-				load: function() {
-					// Show bird with color
-					bird.position.set(0, 0, 0);
-					camera.lookAt(bird.position)
-					camera.setLens(24);
-					document.getElementById('screen2').style.display = 'block';
-
-					// Hint Swipe
-				},
-
-				unload: function() {
-					document.getElementById('screen2').style.display = 'none';
-				}
-			}
-
-
-			var currentScene = -1;
 
 			function gotoScreen(generic) {
 
-				if (currentScene> -1) scenes[currentScene].unload();
+				console.log('goto', generic);
+				if (currentScene> -1) {
+					scenes[currentScene].unload();
+					console.log('unload scene', currentScene);
+				}
 				currentScene = generic;
+				console.log('load scene', currentScene);
 				scenes[currentScene].load();
 
 			}
-
-			function gotoScreen0() {
-
-				scenes[0].load();
-
-			}
-
-			function gotoScreen1() {
-
-				scenes[0].unload();
-				scenes[1].load();
-
-			}
-
-			function gotoScreen2() {
-
-				scenes[1].unload();
-				scenes[2].load();
-				
-			}
-
-
 
 			function render() {
 

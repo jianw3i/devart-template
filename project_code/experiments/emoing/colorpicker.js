@@ -16,7 +16,7 @@ function ColorPicker(width, height) {
 	this.domElement = canvas;
 
 	this.setEnabled = function( bool ) {
-		canvas.style.display = bool ? 'display' : 'none';
+		// canvas.style.display = bool ? 'display' : 'none';
 		enabled = bool;
 	}
 
