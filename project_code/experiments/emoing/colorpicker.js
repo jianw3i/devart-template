@@ -24,7 +24,12 @@ function ColorPicker(width, height) {
 		this.listener = listener;
 	}
 
+	this.setSize = function( width, height ) {
+
+	}
+
 	var ctx = canvas.getContext('2d');
+
 	var imageData = ctx.getImageData(0, 0, width, height);
 	var data = imageData.data;
 
@@ -43,8 +48,6 @@ function ColorPicker(width, height) {
 	var midy = height / 2; // 400
 	var radius = box / 3; // 200
 	var ringThickness = radius / 6; // 40
-
-
 
 	for (h=0;h<height;h++) {
 		for (w=0;w<width;w++) {

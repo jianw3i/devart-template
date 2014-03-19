@@ -477,9 +477,55 @@
 
 			function setupScenes() {
 
+				var hasTouch = 'ontouchstart' in document.body;
+				var click = hasTouch ? 'touchstart' : 'click';
+
+				// var
+				birdCanvas = document.createElement('canvas');
+				var ctx = birdCanvas.getContext('2d');
+
+				birdCanvas.width = innerWidth;
+				birdCanvas.height = innerHeight;
+				
+				/*
+				// var devicePixelRatio, backingStoreRatio;
+				// see http://www.html5rocks.com/en/tutorials/canvas/hidpi/ for more info
+				// finally query the various pixel ratios
+
+				devicePixelRatio = window.devicePixelRatio || 1,
+				backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
+									ctx.mozBackingStorePixelRatio ||
+									ctx.msBackingStorePixelRatio ||
+									ctx.oBackingStorePixelRatio ||
+									ctx.backingStorePixelRatio || 1,
+
+				ratio = devicePixelRatio / backingStoreRatio;
+
+				console.log('devicePixelRatio, backingStoreRatio', devicePixelRatio, backingStoreRatio);
+
+
+				
+				if (devicePixelRatio !== backingStoreRatio) {
+
+					// console.log(birdCanvas, ratio)
+					var oldWidth = innerWidth;
+					var oldHeight = innerHeight;
+
+					SCREEN_WIDTH = oldWidth * ratio;
+					SCREEN_HEIGHT = oldHeight * ratio;
+
+					birdCanvas.style.width = oldWidth + 'px';
+					birdCanvas.style.height = oldHeight  + 'px';
+
+					// ctx.scale(ratio, ratio);
+
+				}
+
+				*/
+
 				var screen0done = document.getElementById('begin');
 
-				screen0done.addEventListener('click', function(e) {
+				screen0done.addEventListener(click, function(e) {
 
 					 gotoScreen(1);
 
@@ -487,7 +533,7 @@
 
 				var screen1done = document.getElementById('screen1-done');
 
-				screen1done.addEventListener('click', function(e) {
+				screen1done.addEventListener(click, function(e) {
 
 					gotoScreen(2);
 
@@ -535,7 +581,7 @@
 						// Show bird with color
 						bird.position.set(0, 0, 0);
 						camera.lookAt(bird.position)
-						camera.setLens(24);
+						camera.setLens(50);
 						document.getElementById('screen2').style.display = 'block';
 
 						// Hint Swipe
@@ -645,12 +691,16 @@
 				var line = new THREE.Line( lines, new THREE.LineBasicMaterial( {color: 0xffffff, opacity: 0.8 } ) );
 				scene.add( line );
 
-				renderer = new THREE.CanvasRenderer();
+				renderer = new THREE.CanvasRenderer({
+					canvas: birdCanvas,
+					devicePixelRatio: 1
+				});
 				// renderer.setClearColor( 0xffffff );
 				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
 
 
 				dom = renderer.domElement;
+				dom.id = 'birdCanvas';
 
 				dom.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
