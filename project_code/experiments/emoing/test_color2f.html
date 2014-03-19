@@ -1,0 +1,168 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+</head>
+<body>
+<style>
+body {
+	width: 100%;
+	height: 100%;
+}
+</style>
+<script src="../libs/three.min.js"></script>
+<script>
+
+		var width = innerWidth;
+		var height = innerHeight;
+
+
+		var canvas = document.createElement('canvas');
+		canvas.width = width;
+		canvas.height = height;
+
+		document.body.appendChild(canvas);
+
+
+
+		var ctx = canvas.getContext('2d');
+		var imageData = ctx.getImageData(0, 0, width, height);
+		var data = imageData.data;
+		
+		var h, s, l;
+		l = 0.5;
+
+		var color = new THREE.Color();
+
+		ctx.fillStyle = 'red';
+		ctx.fillRect( 100, 100, 2, 2 );
+
+
+		var r, a, r2;
+
+		r = 0;
+		var ad = 1000, rd = 200;
+
+		var offset = 0;
+		var midx = 400;
+		var midy = 400;
+		var radius = 200;
+		var ringThickness = 40;
+
+
+		for (h=0;h<height;h++) {
+			for (w=0;w<width;w++) {
+				offset = (h * width + w) * 4;
+
+				var c = colorAt(w, h);
+				if (!c) continue;
+
+		
+
+				data[ offset + 0 ] = c.r * 255;
+				data[ offset + 1 ] = c.g * 255;
+				data[ offset + 2 ] = c.b * 255;
+				data[ offset + 3 ] = 255;
+
+
+
+			}
+		}
+
+		function draw() {
+
+			// ctx.clearRect(0, 0, width, height);
+			ctx.putImageData(imageData, 0, 0);
+
+		}
+
+
+		function colorAt(w, h) {
+
+			var distance;
+
+			dx = midx - w;
+			dy = midy - h;
+			distance = Math.sqrt( dx * dx + dy * dy );
+
+			if (distance > radius) return;
+			if (distance < (radius - ringThickness) ) return;
+
+			hue = Math.atan2(dy, dx) / Math.PI / 2 + 0.5;
+			s = distance / radius;
+
+			color.setHSL(hue, s, l);
+			color.hue = hue;
+
+			return color;
+
+		}
+
+		function touchAt(x, y) {
+			var c = colorAt(x, y);
+
+			if (c) {
+				ctx.fillStyle = '#' + c.getHexString();
+				var angle = (c.hue ) * 2 * Math.PI;
+				draw();
+				// console.log(currentColor.getHexString(), ctx.fillStyle);
+				ctx.fillRect(200, 200, 40, 40)
+
+				ctx.beginPath();
+				ctx.lineWidth = 8;
+				ctx.strokeStyle = '#fff'
+
+
+
+				ctx.arc(midx + Math.cos(angle) * (radius - ringThickness/2) , midy + Math.sin(angle) * (radius - ringThickness / 2), ringThickness / 2, 0, Math.PI * 2 );
+				ctx.stroke();
+				ctx.closePath();
+				// document.body.style.backgroundColor = ctx.fillStyle;
+			}
+
+		}
+
+
+
+		// setInterval(draw, 40);
+
+		draw();
+
+
+		document.addEventListener( 'mousemove', function ( event ) {
+			touchAt(event.pageX, event.pageY);
+		}, false );
+
+
+		document.addEventListener( 'touchstart', function ( event ) {
+			// console.log('touchmove', event);
+
+			// if (event.touches.length) {
+				
+			// 	h = t.pageX / innerWidth;
+			// 	s = t.pageY / innerHeight;
+			// 	color.setHSL(h, s, l);
+			// 	hex = color.getHexString();
+			// 	document.body.style.backgroundColor = '#' + hex;
+				
+			// }
+
+			event.preventDefault();
+		}, false );
+
+
+
+		document.addEventListener( 'touchmove', function ( event ) {
+			if (event.touches.length) {
+
+				var t = event.touches[0];
+
+				touchAt(t.pageX, t.pageY);
+			}
+
+			event.preventDefault();
+		}, false );
+		
+</script>
+</body>
+</html>

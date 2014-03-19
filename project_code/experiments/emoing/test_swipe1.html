@@ -1,0 +1,101 @@
+<html>
+<body>
+<link href='http://fonts.googleapis.com/css?family=Varela+Round' rel='stylesheet' type='text/css'>
+<style>
+body {
+	font-family: 'Varela Round', sans-serif;
+}
+
+</style>
+
+<div id="swipe" style="font-size: 40px; display: none;">
+	Swipe!!!
+</div>
+
+<script>
+
+var swipe = document.querySelector('#swipe');
+
+function showSwipe(text) {
+	if (text) swipe.innerHTML = text;
+	swipe.style.display = 'block';
+	setTimeout(hideSwipe, 800);
+}
+
+function hideSwipe() {
+	swipe.style.display = 'none';
+}
+
+showSwipe();
+
+var start;
+		// touch events
+		document.addEventListener( 'touchstart', function ( event ) {
+			// console.log('touchstart', event);
+			console.log('touchstart', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+
+
+			if (event.touches.length == 1) {
+				var t = event.touches[0];
+				start = {
+					time: Date.now(),
+					x: t.pageX,
+					y: t.pageY
+				}
+			}
+
+			event.preventDefault();
+		}, false );
+		
+		document.addEventListener( 'touchend', function ( event ) {
+			// console.log('touchend', event);
+
+			if (event.changedTouches.length == 1) {
+				var t = event.changedTouches[0];
+				end = {
+					time: Date.now(),
+					x: t.pageX,
+					y: t.pageY
+				}
+				var dt = (Date.now() - start.time) / 1000;
+				var dx = t.pageX - start.x;
+				var dy = t.pageY - start.y;
+
+				var px = dx / innerWidth * 100;
+				var py = Math.abs(dy) / innerHeight * 100;
+				var endy = t.pageY / innerHeight;
+
+				var swipeUp = endy < 0.01 && dt < 1.5 && py > 50 && dy < 0;;
+
+				showSwipe( dt + "s <br/>x:" + px + " <br/>y:" +  py + " <br/>endy:" + endy +  " <br/>SWIPED:" + swipeUp )
+
+
+			}
+
+			console.log('touchend', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+		document.addEventListener( 'touchmove', function ( event ) {
+			// console.log('touchmove', event);
+			console.log('touchmove', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+
+		document.addEventListener( 'touchenter', function ( event ) {
+			// console.log('touchmove', event);
+			console.log('touchenter', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+
+		document.addEventListener( 'touchenter', function ( event ) {
+			console.log('touchenter', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+
+		document.addEventListener( 'touchleave', function ( event ) {
+			console.log('touchleave', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+
+		document.addEventListener( 'touchcancel', function ( event ) {
+			console.log('touchcancel', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+		
+</script>
+</body>
+</html>

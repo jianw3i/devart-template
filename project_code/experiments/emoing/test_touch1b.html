@@ -1,0 +1,37 @@
+<html>
+<body>
+<script>
+		// touch events
+		document.addEventListener( 'touchstart', function ( event ) {
+			// console.log('touchstart', event);
+			console.log('touchstart', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+		document.addEventListener( 'touchend', function ( event ) {
+			// console.log('touchend', event);
+			console.log('touchend', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+		document.addEventListener( 'touchmove', function ( event ) {
+			// console.log('touchmove', event);
+			console.log('touchmove', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+
+		document.addEventListener( 'touchenter', function ( event ) {
+			// console.log('touchmove', event);
+			console.log('touchenter', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+
+		document.addEventListener( 'touchenter', function ( event ) {
+			console.log('touchenter', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+
+		document.addEventListener( 'touchleave', function ( event ) {
+			console.log('touchleave', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+
+		document.addEventListener( 'touchcancel', function ( event ) {
+			console.log('touchcancel', event.touches.length, event.targetTouches.length, event.changedTouches.length);
+		}, false );
+		
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+</head>
+<body>
+<style>
+body {
+	width: 100%;
+	height: 100%;
+}
+</style>
+<script src="../libs/three.min.js"></script>
+<script>
+		// touch events
+
+		var width = innerWidth;
+		var height = innerHeight;
+
+
+		var canvas = document.createElement('canvas');
+		canvas.width = width;
+		canvas.height = height;
+
+		document.body.appendChild(canvas);
+
+
+		var ctx = canvas.getContext('2d');
+
+		var h, s, l;
+		l = 0.5;
+
+		var color = new THREE.Color();
+
+		ctx.fillStyle = 'red';
+		ctx.fillRect( 100, 100, 2, 2 );
+
+
+		var r, a;
+
+		r = 100;
+		for (a=0;a<360;a++) {
+
+			x = Math.cos( a / 180 * Math.PI ) * r;
+			y = Math.sin( a / 180 * Math.PI ) * r;
+			
+			h = a / 360;
+			s = 1;
+			color.setHSL(h, s, l);
+			hex = color.getHexString();
+
+			ctx.fillStyle = '#' + hex;
+
+			ctx.fillRect( x + 400 , y + 400, 2, 2 );
+
+		}
+
+
+
+
+
+		// document.addEventListener( 'touchstart', function ( event ) {
+		// 	console.log('touchmove', event);
+
+		// 	if (event.touches.length) {
+		// 		var t = event.touches[0];
+		// 		h = t.pageX / innerWidth;
+		// 		s = t.pageY / innerHeight;
+		// 		color.setHSL(h, s, l);
+		// 		hex = color.getHexString();
+		// 		document.body.style.backgroundColor = '#' + hex;
+		// 		event.preventDefault();
+		// 	}
+		// }, false );
+
+
+
+		// document.addEventListener( 'touchmove', function ( event ) {
+		// 	if (event.touches.length) {
+		// 		var t = event.touches[0];
+		// 		h = t.pageX / innerWidth;
+		// 		s = t.pageY / innerHeight;
+		// 		color.setHSL(h, s, l);
+		// 		hex = color.getHexString();
+		// 		document.body.style.backgroundColor = '#' + hex;
+		// 		console.log('#' + hex);
+		// 	}
+		// }, false );
+		
+</script>
+</body>
+</html>
