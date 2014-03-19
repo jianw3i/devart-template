@@ -96,10 +96,11 @@
 */
 
 		#screen0 {
-			display: none;
+			/*display: none;*/
 		}
 
 		#screen1 {
+			display: none;
 			position: absolute;
 			top: 0;
 			left: 0;
@@ -112,11 +113,16 @@
 	<body>
 	<div id="screen0">
 		<div class="question">How are you <b>feeling?</b></div>
-		<div class="action">Begin</div>
+		<div class="action" id="begin">Begin</div>
 	</div>
 
 
 	<div id="screen1">
+		<div class="question">Find your color</div>
+		<div class="action" id="screen1-done">Done</div>
+	</div>
+
+	<div id="screen2">
 		
 	</div>
 
@@ -449,6 +455,7 @@
 			var stats;
 
 			var lines;
+			var colorPicker;
 
 			var k;
 			h = Math.random();
@@ -459,8 +466,33 @@
 
 			var expand = 4;
 			
+			setupScenes();
 			init();
 			animate();
+
+			function setupScenes() {
+
+				var screen0done = document.getElementById('begin');
+
+				screen0done.addEventListener('click', function(e) {
+
+					 gotoScreen1();
+
+				});
+
+				var screen1done = document.getElementById('screen1-done');
+
+				screen1done.addEventListener('click', function(e) {
+
+					 gotoScreen2();
+
+				});
+
+
+				// gotoScreen1();
+				
+
+			}
 
 			function init() {
 
@@ -586,12 +618,12 @@
 
 				// Color Picker
 
-				var colorPicker = new ColorPicker(innerWidth, innerHeight);
+				colorPicker = new ColorPicker(innerWidth, innerHeight);
 				screen1.appendChild(colorPicker.domElement);
-				gotoScreen1();
-				colorPicker.listener = function(c) {
+
+				colorPicker.setListener( function(c) {
 					bird.material.color.copy(c);
-				}
+				} );
 
 			}
 
@@ -627,8 +659,6 @@
 					vector.z = boid.position.z;
 
 					boid.follow( vector );
-
-
 
 
 				}
@@ -674,12 +704,92 @@
 
 			}
 
-			function gotoScreen1() {
+			function gotoHome() {
+				// Swipe to continue
+				// Type name? Twitter?
+			}
 
-				camera.setLens(140);
-				bird.material = lambert;
+			// unload, load
+
+			var scenes = [];
+
+			scenes[0] = {
+				load: function() {
+					document.getElementById('screen0').style.display = 'block';
+					// show wireframed bird
+					// Swipe or tap to continue
+					// Tween
+
+					// Animate to next screen
+				},
+
+				unload: function() {
+					document.getElementById('screen0').style.display = 'none';
+				}
+			}
+
+			scenes[1] = {
+				load: function() {
+					// Show color picker
+					colorPicker.setEnabled( true );
+					camera.setLens(140);
+					bird.material = lambert;
+					document.getElementById('screen1').style.display = 'block';
+				},
+
+				unload: function() {
+					colorPicker.setEnabled( false );
+					document.getElementById('screen1').style.display = 'none';
+				}
+			}
+
+			scenes[2] = {
+				load: function() {
+					// Show bird with color
+					bird.position.set(0, 0, 0);
+					camera.lookAt(bird.position)
+					camera.setLens(24);
+					document.getElementById('screen2').style.display = 'block';
+
+					// Hint Swipe
+				},
+
+				unload: function() {
+					document.getElementById('screen2').style.display = 'none';
+				}
+			}
+
+
+			var currentScene = -1;
+
+			function gotoScreen(generic) {
+
+				if (currentScene> -1) scenes[currentScene].unload();
+				currentScene = generic;
+				scenes[currentScene].load();
 
 			}
+
+			function gotoScreen0() {
+
+				scenes[0].load();
+
+			}
+
+			function gotoScreen1() {
+
+				scenes[0].unload();
+				scenes[1].load();
+
+			}
+
+			function gotoScreen2() {
+
+				scenes[1].unload();
+				scenes[2].load();
+				
+			}
+
 
 
 			function render() {
@@ -711,7 +821,7 @@
 					// }
 
 					// if screen 1
-					
+					if (currentScene < 2)
 					camera.lookAt(bird.position)
 
 				}

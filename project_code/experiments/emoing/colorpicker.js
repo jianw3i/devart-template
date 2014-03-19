@@ -10,8 +10,19 @@ function ColorPicker(width, height) {
 	var canvas = document.createElement('canvas');
 	canvas.width = width;
 	canvas.height = height;
+	canvas.id = 'touch-colorpicker';
 
+	var enabled = false;
 	this.domElement = canvas;
+
+	this.setEnabled = function( bool ) {
+		canvas.style.display = bool ? 'display' : 'none';
+		enabled = bool;
+	}
+
+	this.setListener = function( listener ) {
+		this.listener = listener;
+	}
 
 	var ctx = canvas.getContext('2d');
 	var imageData = ctx.getImageData(0, 0, width, height);
@@ -169,19 +180,28 @@ function ColorPicker(width, height) {
 	}
 
 
-	function colorAt(w, h) {
+	function colorAt(w, h, lenient) {
 
 		var distance;
 
 		dx = midx - w;
 		dy = midy - h;
-		distance = Math.sqrt( dx * dx + dy * dy );
 
-		if (distance > radius) return;
-		if (distance < (radius - ringThickness) ) return;
+		if (true && !lenient) {
+			
+			distance = Math.sqrt( dx * dx + dy * dy );
+			
+			if (distance > radius) return;
+			if (distance < (radius - ringThickness) ) return;
+
+			s = distance / radius;
+
+		} else {
+			s = 0.5;
+		}
 
 		hue = Math.atan2(dy, dx) / Math.PI / 2 + 0.5;
-		s = distance / radius;
+		
 
 		color.setHSL(hue, s, l);
 		color.hue = hue;
@@ -196,10 +216,13 @@ function ColorPicker(width, height) {
 	var me = this;;
 
 	function touchAt(x, y) {
+
+		if (!enabled) return;
+
 		lastx = x;
 		lasty = y;
 
-		var c = colorAt(lastx, lasty);
+		var c = colorAt(lastx, lasty, true);
 		if (c) {
 			lastColor = c.clone();
 			touchedHue = c.hue;

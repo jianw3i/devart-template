@@ -10,11 +10,13 @@
         "toolkits": [
             "three.js",
             "webgl",
-            "webaudioapi"
+            "webaudioapi",
+            "node.js"
         ],
         "languages": [
             "javascript",
-            "glsl"
+            "glsl",
+            "css"
         ]
     },
     "themes": [
