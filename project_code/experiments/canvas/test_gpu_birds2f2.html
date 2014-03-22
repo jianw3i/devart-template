@@ -1,0 +1,1021 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - gpgpu - flocking</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background-color: #ffffff;
+				margin: 0px;
+				overflow: hidden;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				text-align:center;
+				cursor: pointer;
+			}
+
+			a {
+				color:#0078ff;
+			}
+
+			#info {
+				color: #000;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+			}
+
+		</style>
+	</head>
+	<body>
+
+		<div id="info">
+			<a href="http://threejs.org" target="_blank">three.js</a> - <span id="birds"></span> webgl gpgpu birds<br/>
+			Select <span id="options"></span> birds<br/>
+			Move mouse to disturb birds.
+			
+		</div>
+
+		<script src="../libs/three.min.js"></script>
+		<script src="../libs/Detector.js"></script>
+		<script src="../libs/stats.min.js"></script>
+		<script src="../libs/dat.gui.min.js"></script>
+
+		<script src="js/shaders/BleachBypassShader.js"></script>
+		<script src="js/shaders/BlendShader.js"></script>
+		<script src="js/shaders/ConvolutionShader.js"></script>
+		<script src="js/shaders/CopyShader.js"></script>
+		<script src="js/shaders/FXAAShader.js"></script>
+		<script src="js/shaders/HorizontalTiltShiftShader.js"></script>
+		<script src="js/shaders/VerticalTiltShiftShader.js"></script>
+		<script src="js/shaders/TriangleBlurShader.js"></script>
+		<script src="js/shaders/VignetteShader.js"></script>
+
+		<script src="js/postprocessing/EffectComposer.js"></script>
+		<script src="js/postprocessing/RenderPass.js"></script>
+		<script src="js/postprocessing/BloomPass.js"></script>
+		<script src="js/postprocessing/ShaderPass.js"></script>
+		<script src="js/postprocessing/MaskPass.js"></script>
+		<script src="js/postprocessing/SavePass.js"></script>
+
+		<script src="SimulationRenderer2f.js"></script>
+
+		<script src="../birds/bird.js"></script>
+		<script src="../birds/flock.js"></script>
+
+
+		<!-- pass through vertex shader -->
+		<script id="vertexShader" type="x-shader/x-vertex">
+
+			void main()	{
+
+				gl_Position = vec4( position, 1.0 );
+
+			}
+
+		</script>
+
+
+		<script id="encodeFloatShader" type="x-shader/x-fragment">
+
+			uniform sampler2D texture;
+			uniform vec2 resolution;
+
+			vec2 new_res = resolution * 2.;
+
+			float shift_right(float v, float amt) {
+				v = floor(v) + 0.5;
+				return floor(v / exp2(amt));
+			}
+			float shift_left(float v, float amt) {
+				return floor(v * exp2(amt) + 0.5);
+			}
+			float mask_last(float v, float bits) {
+				return mod(v, shift_left(1.0, bits));
+			}
+			float extract_bits(float num, float from, float to) {
+				from = floor(from + 0.5);
+				to = floor(to + 0.5);
+				return mask_last(shift_right(num, from), to - from);
+			}
+			vec4 encode_float(float val) {
+				if (val == 0.0)
+				return vec4(0, 0, 0, 0);
+				float sign = val > 0.0 ? 0.0 : 1.0;
+				val = abs(val);
+				float exponent = floor(log2(val));
+				float biased_exponent = exponent + 127.0;
+				float fraction = ((val / exp2(exponent)) - 1.0) * 8388608.0;
+				float t = biased_exponent / 2.0;
+				float last_bit_of_biased_exponent = fract(t) * 2.0;
+				float remaining_bits_of_biased_exponent = floor(t);
+				float byte4 = extract_bits(fraction, 0.0, 8.0) / 255.0;
+				float byte3 = extract_bits(fraction, 8.0, 16.0) / 255.0;
+				float byte2 = (last_bit_of_biased_exponent * 128.0 + extract_bits(fraction, 16.0, 23.0)) / 255.0;
+				float byte1 = (sign * 128.0 + remaining_bits_of_biased_exponent) / 255.0;
+				return vec4(byte4, byte3, byte2, byte1);
+			}
+
+
+			void main()	{
+				// vec2 uv = floor(gl_FragCoord.xy / 4.0);
+
+				float new_index = floor(gl_FragCoord.y) * new_res.x + floor(gl_FragCoord.x);
+
+				float com = mod(new_index,  4.);
+				float old_index = floor(new_index / 4.0);
+
+				float old_x = mod(old_index, resolution.x);
+				float old_y = floor(old_index / resolution.x);
+
+				vec2 ref = vec2((old_x + 0.5) / resolution.x, (old_y + 0.5) /resolution.y);
+
+				vec4 t = texture2D( texture, ref  );
+
+				// Texture is mooted! :( < 0.5
+
+				float f;
+				if (com==0.) f = t.r;
+				if (com==1.) f = t.g;
+				if (com==2.) f = t.b;
+				if (com==3.) f = t.a;
+
+				gl_FragColor = encode_float(f);
+
+			}
+		</script>
+
+		<!-- pass through fragment shader -->
+		<script id="fragmentShader" type="x-shader/x-fragment">
+
+			uniform vec2 resolution;
+			uniform float time;
+			uniform sampler2D texture;
+
+			void main()	{
+
+				vec2 uv = gl_FragCoord.xy / resolution.xy;
+				gl_FragColor= texture2D( texture, uv ); // Full pass
+
+				// vec3 color = texture2D( texture, uv ).xyz;
+				// gl_FragColor=vec4(color, 1.0);
+				
+
+			}
+
+		</script>
+		<!-- end pass through shaders -->
+
+		<!-- shader for bird's position -->
+		<script id="fragmentShaderPosition" type="x-shader/x-fragment">
+
+			uniform vec2 resolution;
+			uniform float time;
+			uniform float delta;
+			uniform sampler2D textureVelocity;
+			uniform sampler2D texturePosition;
+
+			void main()	{
+
+				vec2 uv = gl_FragCoord.xy / resolution.xy;
+				vec4 tmpPos = texture2D( texturePosition, uv );
+				vec3 position = tmpPos.xyz;
+				vec3 velocity = texture2D( textureVelocity, uv ).xyz;
+
+				float phase = tmpPos.w;
+
+				phase = mod( ( phase + delta +
+					length( velocity.xz ) * delta * 3. +
+					max( velocity.y, 0.0 ) * delta * 6. ), 62.83 );
+
+				gl_FragColor = vec4( position + velocity * delta * 15. , phase );
+
+			}
+
+		</script>
+
+		<!-- shader for bird's velocity -->
+		<script id="fragmentShaderVelocity" type="x-shader/x-fragment">
+
+			uniform vec2 resolution;
+			uniform float time;
+			uniform float testing;
+			uniform float delta; // about 0.016
+			uniform float seperationDistance; // 20
+			uniform float alignmentDistance; // 40
+			uniform float cohesionDistance; // 
+			uniform float freedomFactor;
+			uniform vec3 predator;
+
+
+			uniform sampler2D textureVelocity;
+			uniform sampler2D texturePosition;
+
+			uniform sampler2D birdColors;			
+
+			const float width = WIDTH;
+			const float height = WIDTH;
+
+			const float PI = 3.141592653589793;
+			const float PI_2 = PI * 2.0;
+			// const float VISION = PI * 0.55;
+
+			float zoneRadius = 40.0;
+			float zoneRadiusSquared = zoneRadius * zoneRadius;
+
+			float separationThresh = 0.45;
+			float alignmentThresh = 0.65;
+
+			const float UPPER_BOUNDS = 400.0;
+			const float LOWER_BOUNDS = -UPPER_BOUNDS;
+
+			const float SPEED_LIMIT = 9.0;
+
+			float rand(vec2 co){
+			    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+			}
+
+			void main()	{
+
+				zoneRadius = seperationDistance + alignmentDistance + cohesionDistance;
+				separationThresh = seperationDistance / zoneRadius;
+				alignmentThresh = ( seperationDistance + alignmentDistance ) / zoneRadius;
+				zoneRadiusSquared = zoneRadius * zoneRadius;
+
+
+				vec2 uv = gl_FragCoord.xy / resolution.xy;
+				vec3 birdPosition, birdVelocity;
+
+				vec3 selfPosition = texture2D( texturePosition, uv ).xyz;
+				vec3 selfVelocity = texture2D( textureVelocity, uv ).xyz;
+
+				if (texture2D( birdColors, uv ).a < 1.) discard;
+
+				float dist;
+				vec3 dir; // direction
+				float distSquared;
+
+				float seperationSquared = seperationDistance * seperationDistance;
+				float cohesionSquared = cohesionDistance * cohesionDistance;
+
+				float f;
+				float percent;
+
+				vec3 velocity = selfVelocity;
+
+				float limit = SPEED_LIMIT;
+
+				dir = predator * UPPER_BOUNDS - selfPosition;
+				dir.z = 0.;
+				// dir.z *= 0.6;
+				dist = length( dir );
+				distSquared = dist * dist;
+
+				float preyRadius = 150.0;
+				float preyRadiusSq = preyRadius * preyRadius;
+
+				
+				// move birds away from predator
+				if (dist < preyRadius) {
+
+					f = ( distSquared / preyRadiusSq - 1.0 ) * delta * 100.;
+					velocity += normalize( dir ) * f;
+					limit += 5.0;
+				}
+
+
+				// if (testing == 0.0) {}
+				// if ( rand( uv + time ) < freedomFactor ) {}
+
+				//
+
+
+				// Attract flocks to the center
+				vec3 central = vec3( 0., 0., 0. );
+				dir = selfPosition - central;
+				dist = length( dir );
+				dir.y *= 2.5;
+				velocity -= normalize( dir ) * delta * 5.;
+
+				for (float y=0.0;y<height;y++) {
+					for (float x=0.0;x<width;x++) {
+
+						if (
+							x == gl_FragCoord.x && y == gl_FragCoord.y) continue;
+
+
+						vec2 ref = vec2( (x + 0.5) / resolution.x, (y + 0.5) / resolution.y );
+						if (texture2D( birdColors, ref ).a < 1.) continue;
+
+						birdPosition = texture2D( texturePosition, ref ).xyz;
+
+						dir = birdPosition - selfPosition;
+						dist = length(dir);
+						distSquared = dist * dist;
+
+
+						if ( rand( uv + time + vec2( x / resolution.x,  y / resolution.y ) ) < (0.7 + sin(time * 3.)) ) continue;
+
+						if ( dist > 0.0 && distSquared < zoneRadiusSquared ) {
+
+							percent = distSquared / zoneRadiusSquared;
+
+							if ( percent < separationThresh ) { // low
+
+								// Separation - Move apart for comfort
+								f = (separationThresh / percent - 1.0) * delta;
+								velocity -= normalize(dir) * f;
+
+
+
+							} else if ( percent < alignmentThresh ) { // high
+
+								// Alignment - fly the same direction
+								float threshDelta = alignmentThresh - separationThresh;
+								float adjustedPercent = ( percent - separationThresh ) / threshDelta;
+
+								birdVelocity = texture2D( textureVelocity, ref ).xyz;
+								
+								f = ( 0.5 - cos( adjustedPercent * PI_2 ) * 0.5 + 0.5 ) * delta;
+								velocity += normalize(birdVelocity) * f;
+
+							} else {
+
+								// Attraction / Cohesion - move closer
+								float threshDelta = 1.0 - alignmentThresh;
+								float adjustedPercent = ( percent - alignmentThresh ) / threshDelta;
+
+								 f = ( 0.5 - ( cos( adjustedPercent * PI_2 ) * -0.5 + 0.5 ) ) * delta;
+
+								 velocity += normalize(dir) * f;
+
+							}
+
+						}
+
+					}
+
+				}
+
+
+				if ((selfPosition.x + velocity.x * 5.0) < LOWER_BOUNDS * 2.) velocity.x = -velocity.x;
+				if ((selfPosition.y + velocity.y * 5.0) < LOWER_BOUNDS) velocity.y = -velocity.y;
+				if ((selfPosition.z + velocity.z * 5.0) < LOWER_BOUNDS) velocity.z = -velocity.z;
+
+				if ((selfPosition.x + velocity.x * 5.0) > UPPER_BOUNDS * 2.) velocity.x = -velocity.x;
+				if ((selfPosition.y + velocity.y * 5.0) > UPPER_BOUNDS) velocity.y = -velocity.y;
+				if ((selfPosition.z + velocity.z * 5.0) > UPPER_BOUNDS) velocity.z = -velocity.z;
+
+
+				
+
+				// this make tends to fly around than down or up
+				// if (velocity.y > 0.) velocity.y *= (1. - 0.2 * delta);
+
+				// Speed Limits
+				if ( length( velocity ) > limit ) {
+					velocity = normalize( velocity ) * limit;
+				}
+
+				gl_FragColor = vec4( velocity, 1.0 );
+
+			}
+
+		</script>
+
+		<script type="x-shader/x-vertex" id="birdVS">
+
+			attribute vec2 reference;
+			attribute float birdVertex;
+
+			attribute vec3 birdColor;
+			
+			uniform sampler2D texturePosition;
+			uniform sampler2D textureVelocity;
+			uniform sampler2D birdColors;
+
+			varying vec4 vColor;
+			varying float z;
+
+			uniform float time;
+
+			void main() {
+
+				vec4 tmpPos = texture2D( texturePosition, reference );
+				vec3 pos = tmpPos.xyz;
+				vec3 velocity = normalize(texture2D( textureVelocity, reference ).xyz);
+
+				vec3 newPosition = position;
+
+				if ( birdVertex == 4.0 || birdVertex == 7.0 ) {
+					// flap wings
+					newPosition.y = sin( tmpPos.w ) * 5.;
+				}
+
+				newPosition = mat3( modelMatrix ) * newPosition;
+
+
+				velocity.z *= -1.;
+				float xz = length( velocity.xz );
+				float xyz = 1.;
+				float x = sqrt( 1. - velocity.y * velocity.y );
+				
+				float cosry = velocity.x / xz;
+				float sinry = velocity.z / xz;
+
+				float cosrz = x / xyz;
+				float sinrz = velocity.y / xyz;
+
+				mat3 maty =  mat3(
+					cosry, 0, -sinry,
+					0    , 1, 0     ,
+					sinry, 0, cosry
+
+				);
+
+				mat3 matz =  mat3(
+					cosrz , sinrz, 0,
+					-sinrz, cosrz, 0,
+					0     , 0    , 1
+				);
+
+				newPosition =  maty * matz * newPosition;
+				newPosition += pos;
+
+				z = newPosition.z;
+				
+				// vColor = vec4( birdColor, 1.0 );
+				vColor = texture2D( birdColors, reference );
+				gl_Position = projectionMatrix *  viewMatrix  * vec4( newPosition, 1.0 );
+			}
+
+		</script>
+
+		<!-- bird geometry shader -->
+		<script type="x-shader/x-fragment" id="birdFS">
+
+			varying vec4 vColor;
+			varying float z;
+
+			// uniform vec3 color;
+
+			void main() {
+				
+
+				
+				// Fake colors for now
+				float z2 = 0.2 + ( 1000. - z ) / 1000.;
+				// gl_FragColor = vec4( z2, z2, z2, 1. );
+				if (vColor.a == 0.) {
+					discard;
+				}
+
+
+				// gl_FragColor = vec4( vColor.r, vColor.g, vColor.b, vColor.a );
+
+				gl_FragColor = vec4( vColor.r, vColor.g, vColor.b, 1. );
+
+				// gl_FragColor = vec4( vColor.a, vColor.a, vColor.a, 1. );
+
+			}
+
+		</script>
+
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var ac;
+			window.AudioContext = window.AudioContext || window.webkitAudioContext;
+			if (window.AudioContext) ac = new AudioContext();
+			var type = "speckled-throated-spew";
+			var flock = new flock(ac, 5, type);
+
+
+			var hash = document.location.hash.substr( 1 );
+			if (hash) hash = parseInt(hash, 0);
+
+			/* TEXTURE WIDTH FOR SIMULATION */
+			var WIDTH = hash || 32; 
+
+			var BIRDS = WIDTH * WIDTH;
+
+			// Custom Geometry - using 3 triangles each. No UVs, no normals currently.
+			THREE.BirdGeometry = function () {
+
+				var triangles = BIRDS * 3;
+				var points = triangles * 3;
+
+				THREE.BufferGeometry.call( this );
+				// THREE.Geometry2.call( this, points );
+
+				var vertices = new THREE.Float32Attribute( points, 3 );
+				var birdColors = new THREE.Float32Attribute( points, 3 );
+				var references = new THREE.Float32Attribute( points, 2 );
+				var birdVertex = new THREE.Float32Attribute( points, 1 );
+
+				this.addAttribute( 'position', vertices );
+				this.addAttribute( 'birdColor', birdColors );
+				this.addAttribute( 'reference', references );
+				this.addAttribute( 'birdVertex', birdVertex );
+
+				// this.addAttribute( 'normal', new Float32Array( points * 3 ), 3 );
+
+
+				var v = 0;
+
+				function verts_push() {
+					for (var i=0; i < arguments.length; i++) {
+						vertices.array[v++] = arguments[i];
+					}
+				}
+
+				var wingsSpan = 20;
+
+				for (var f = 0; f<BIRDS; f++ ) {
+
+					// Body
+					verts_push(
+						0, -0, -20,
+						0, 4, -20,
+						0, 0, 30
+					);
+
+					// Left Wing
+					verts_push(
+						0, 0, -15,
+						-wingsSpan, 0, 0,
+						0, 0, 15
+					);
+
+					// Right Wing
+					verts_push(
+						0, 0, 15,
+						wingsSpan, 0, 0,
+						0, 0, -15
+					);
+
+				}
+
+				var c = new THREE.Color();
+
+
+				// 0x444444 +
+				// ~~(v / 9) / BIRDS * 0x666666
+
+				for( var v = 0; v < points; v++ ) {
+
+					var i = v / 3 | 0; // which triangle
+					var j = i / 3 | 0; // which bird
+
+					var x = (j % WIDTH + 0.5) / WIDTH;
+					var y = ((j / WIDTH | 0) + 0.5) / WIDTH;
+
+					if (i % 3 == 0) c.setHSL(Math.random(), Math.random(), 0.5);
+
+					birdColors.array[ v * 3 + 0 ] = c.r;
+					birdColors.array[ v * 3 + 1 ] = c.g;
+					birdColors.array[ v * 3 + 2 ] = c.b;
+
+					references.array[ v * 2     ] = x;
+					references.array[ v * 2 + 1 ] = y;
+
+					birdVertex.array[ v         ] = v % 9;
+
+
+				}
+
+				this.applyMatrix( new THREE.Matrix4().makeScale( 0.2, 0.2, 0.2 ) );
+
+
+			}
+
+
+			THREE.BirdGeometry.prototype = Object.create( THREE.BufferGeometry.prototype ); // Geometry2
+
+
+			var container, stats;
+			var camera, scene, renderer, geometry, i, h, color;
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			
+			var HEIGHT = WIDTH;
+			var PARTICLES = WIDTH * WIDTH;
+			var BOUNDS = 800, BOUNDS_HALF = BOUNDS / 2;
+
+			document.getElementById('birds').innerText = PARTICLES;
+
+			function change(n) {
+				location.hash = n;
+				location.reload();
+				return false;
+			}
+
+
+			var options = '';
+			for (i=1; i<7; i++) {
+				var j = Math.pow(2, i);
+				options += '<a href="#" onclick="return change(' + j + ')">' + (j * j) + '</a> ';
+			}
+			document.getElementById('options').innerHTML = options;
+
+			var debug;
+			var data, texture;
+
+			var spline = new THREE.SplineCurve3();
+
+
+			var timer = 0;
+			var paused = false;
+
+			var last = performance.now();
+			var delta, now, t = 0;
+
+
+			var simulator;
+			var target = new THREE.Vector3(), tmp = new THREE.Vector3();
+
+			init();
+			animate();
+			onMouseDown();
+
+			function initPostProcessing() {
+				var renderTargetParameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat, stencilBuffer: false };
+				renderTarget = new THREE.WebGLRenderTarget( innerWidth, innerHeight, renderTargetParameters );
+
+				effectSave = new THREE.SavePass( new THREE.WebGLRenderTarget( innerWidth, innerHeight, renderTargetParameters ) );
+
+				effectBlend = new THREE.ShaderPass( THREE.BlendShader, "tDiffuse1" );
+
+				effectFXAA = new THREE.ShaderPass( THREE.FXAAShader );
+				var effectVignette = new THREE.ShaderPass( THREE.VignetteShader );
+				var effectBleach = new THREE.ShaderPass( THREE.BleachBypassShader );
+				effectBloom = new THREE.BloomPass( 0.75 );
+
+				effectFXAA.uniforms[ 'resolution' ].value.set( 1 / innerWidth, 1 / innerHeight );
+
+				// tilt shift
+
+				// hblur = new THREE.ShaderPass( THREE.HorizontalTiltShiftShader );
+				// vblur = new THREE.ShaderPass( THREE.VerticalTiltShiftShader );
+
+				// var bluriness = 7;
+
+				// hblur.uniforms[ 'h' ].value = bluriness / SCREEN_WIDTH;
+				// vblur.uniforms[ 'v' ].value = bluriness / SCREEN_HEIGHT;
+
+				// hblur.uniforms[ 'r' ].value = vblur.uniforms[ 'r' ].value = 0.35;
+				effectVignette.uniforms[ "offset" ].value = 0.85;
+				effectVignette.uniforms[ "darkness" ].value = 0.5;
+
+				// motion blur
+
+				effectBlend.uniforms[ 'tDiffuse2' ].value = effectSave.renderTarget;
+				effectBlend.uniforms[ 'mixRatio' ].value = 0.850;
+
+				var renderModel = new THREE.RenderPass( scene, camera );
+
+				effectVignette.renderToScreen = true;
+
+				composer = new THREE.EffectComposer( renderer, renderTarget );
+
+				composer.addPass( renderModel );
+
+				composer.addPass( effectFXAA );
+
+				// composer.addPass( effectBlend );
+				// composer.addPass( effectSave );
+
+				// composer.addPass( effectBloom );
+				composer.addPass( effectBleach );
+
+				// composer.addPass( hblur );
+				// composer.addPass( vblur );
+
+				composer.addPass( effectVignette );
+			}
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.001, 150000 );
+				camera.position.z = 350;
+
+				scene = new THREE.Scene();
+
+				scene.fog = new THREE.Fog( 0xffffff, 100, 1000 );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				// renderer.setClearColor( scene.fog.color, 1 );
+				renderer.autoClear = true;
+
+				initPostProcessing();
+
+				////////
+				simulator = new SimulationRenderer(WIDTH, renderer);
+
+				simulator.init();
+
+				/////////
+
+
+		
+				plane = new THREE.PlaneGeometry( BOUNDS, BOUNDS, 1, 1 );
+				// new THREE.BoxGeometry( BOUNDS, BOUNDS, BOUNDS),
+
+				cube = new THREE.Mesh(
+					plane,
+					new THREE.MeshBasicMaterial( {color: 0x999999, wireframe: true, depthWrite: false} )
+				);
+
+				cube.rotation.x = -Math.PI / 2;
+				cube.position.y = -400;
+				scene.add(cube);
+
+
+
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				// document.addEventListener( 'mousedown', onMouseDown, false );
+				document.addEventListener( 'mouseup', onMouseUp, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+
+
+				var gui = new dat.GUI();
+
+
+				var effectController = {
+					seperation: 20.0,
+					alignment: 20.0,
+					cohesion: 20.0,
+					freedom: 0.75
+				};
+
+				var valuesChanger = function() {
+
+					simulator.velocityUniforms.seperationDistance.value = effectController.seperation;
+					simulator.velocityUniforms.alignmentDistance.value = effectController.alignment;
+					simulator.velocityUniforms.cohesionDistance.value = effectController.cohesion;
+					simulator.velocityUniforms.freedomFactor.value = effectController.freedom;
+
+				};
+
+				valuesChanger();
+
+
+				gui.add( effectController, "seperation", 0.0, 100.0, 1.0 ).onChange( valuesChanger );
+				gui.add( effectController, "alignment", 0.0, 100, 0.001 ).onChange( valuesChanger );
+				gui.add( effectController, "cohesion", 0.0, 100, 0.025 ).onChange( valuesChanger );
+				// gui.add( effectController, "freedom", 0.0, 1.0, 0.025 ).onChange( valuesChanger );
+				gui.close();
+
+				initBirds();
+
+
+				birdUniforms.birdColors.value = simulator.dtColors;
+
+
+				// var ambient = new THREE.AmbientLight( 0x444444 );
+				// scene.add( ambient );
+
+				// light = new THREE.DirectionalLight( 0xffffff );
+				// light.position.set( 1, 1, 1 );
+				// scene.add( light );
+
+
+				// light = new THREE.DirectionalLight( 0xffffff );
+				// light.position.set( -1, -1, -1 );
+				// scene.add( light );
+				
+
+
+			}
+
+
+			function initBirds() {
+				var geometry = new THREE.BirdGeometry( );
+
+
+				// For Vertex Shaders
+				birdAttributes = {
+					// index: { type: 'i', value: [] },
+					birdColor: { type: 'c', value: null },
+					reference: { type: 'v2', value: null },
+					birdVertex: { type: 'f', value: null }
+				};
+
+				// For Vertex and Fragment
+				birdUniforms = {
+
+					color: { type: "c", value: new THREE.Color( 0xff2200 ) },
+					texturePosition: { type: "t", value: null },
+					textureVelocity: { type: "t", value: null },
+					time: { type: "f", value: 1.0 },
+					delta: { type: "f", value: 0.0 },
+					birdColors: { type: 't', value: null }
+				};
+
+				// ShaderMaterial
+				var shaderMaterial = new THREE.ShaderMaterial( {
+
+					uniforms: 		birdUniforms,
+					attributes:     birdAttributes,
+					vertexShader:   document.getElementById( 'birdVS' ).textContent,
+					fragmentShader: document.getElementById( 'birdFS' ).textContent,
+					side: THREE.DoubleSide
+
+				});
+
+				// geometry.dynamic = false;
+
+
+				// var 
+				birdMesh = new THREE.Mesh( geometry, shaderMaterial );
+				birdMesh.rotation.y = Math.PI / 2;
+				birdMesh.sortObjects = false;
+
+				birdMesh.matrixAutoUpdate = false;
+				birdMesh.updateMatrix();
+
+				scene.add(birdMesh);
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = event.clientX - windowHalfX;
+				mouseY = event.clientY - windowHalfY;
+
+			}
+
+			function onDocumentTouchStart( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					mouseY = event.touches[ 0 ].pageY - windowHalfY;
+
+				}
+
+			}
+
+			function onDocumentTouchMove( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					mouseY = event.touches[ 0 ].pageY - windowHalfY;
+
+				}
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render() {
+				now = performance.now()
+				delta = (now - last) / 1000;
+
+				if (delta > 1) delta = 1; // safety cap on large deltas
+				last = now;
+
+				birdUniforms.time.value = now;
+				birdUniforms.delta.value = delta;
+
+				// if ( paused ) {
+				// 	camera.position.x += ( mouseX * 2 - camera.position.x ) * 0.05;
+				// 	camera.position.y += ( - mouseY * 2 - camera.position.y ) * 0.05;
+
+				// 	camera.lookAt( scene.position );
+				// 	delta = 0.0001;
+				// }
+
+
+				tmp.set(pixels32[0], pixels32[1], pixels32[2]).subVectors(tmp, target).multiplyScalar(0.2);
+				target.add(tmp);
+				// 
+				
+				// camera.position.set(pixels32[4], pixels32[5], pixels32[6]);
+				// camera.lookAt(target);
+
+				// camera.position.copy(target);
+				// tmp.set(0, 0, 0);
+				// camera.lookAt(tmp);
+
+				// camera.position.set(0, 0, 0);
+				// camera.lookAt(target);
+
+				if (!paused) {
+					simulator.simulate( delta );
+
+					birdUniforms.texturePosition.value = simulator.currentPosition;
+					birdUniforms.textureVelocity.value = simulator.currentVelocity;
+
+					flock.position.x = tmpPosition.x;
+					flock.position.y = tmpPosition.y;
+					flock.position.z = tmpPosition.z;
+					flock.velocity.x = tmpVelocity.x;
+					flock.velocity.y = tmpVelocity.y;
+					flock.velocity.z = tmpVelocity.z;
+
+					if (Math.random() < 0.05) {
+						flock.chirp();
+					}
+				}
+
+
+				simulator.velocityUniforms.predator.value.set( mouseX / windowHalfX, -mouseY / windowHalfY, 0 );
+
+
+				mouseX = 10000;
+				mouseY = 10000;
+
+				// renderer.clear();
+				renderer.render( scene, camera );				
+
+				// renderer.autoClear = false;
+				// renderer.shadowMapEnabled = true;
+				// renderer.clearTarget( null );
+				// composer.render( 0.1 );
+
+			}
+
+			function onMouseDown() {
+				// simulator.velocityUniforms.testing.value = 0;
+			}
+
+			function onMouseUp() {
+				// simulator.velocityUniforms.testing.value = 1;
+			}
+
+
+
+			function showBirds(index, show) {
+				
+				simulator.dtColors.image.data[index * 4 + 3] = show ? 1 : 0;
+				simulator.dtColors.needsUpdate = true;
+
+			}
+
+			var kkk = 0;
+
+			setInterval(function() {
+				if (kkk < PARTICLES) {
+					showBirds(kkk++, true);
+				}
+
+			}, 800);
+
+
+
+
+		</script>
+	</body>
+</html>
