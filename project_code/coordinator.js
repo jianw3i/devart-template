@@ -10,15 +10,24 @@ var websockets_port = 20143;
 var WebSocketServer = require('ws').Server,
 	wss = new WebSocketServer({port: websockets_port});
 
+var fs = require('fs')
 var connections = [];
-var receiver, transmitter;
-
 var receivers = [];
 var transmitters = [];
+
+var captures = []; // Captured emotions
+var CAPTURES_FILE = 'captures.json';
 
 var TYPE_RECEIVER = 'receiver', // Canvas App
 	TYPE_TRANSMITTER = 'transmitter'; // Emo App
 
+// Recover
+try {
+	var json = fs.readFileSync(CAPTURES_FILE, 'utf8');
+	captures = JSON.parse(json);
+} catch (e) {
+
+}
 
 function sendToReceivers(message) { // Does a broadcast
 	var i;
@@ -78,8 +87,8 @@ wss.on('connection', function(ws) {
 
 	ws.on('close', function(e) {
 		console.log('socket closed');
-		if (ws.type==TYPE_TRANSMITTER) removeTransmitter(transmitter);
-		else if (ws.type==TYPE_RECEIVER) removeReceiver(receiver);
+		if (ws.type==TYPE_TRANSMITTER) removeTransmitter(ws);
+		else if (ws.type==TYPE_RECEIVER) removeReceiver(ws);
 	});
 
 	function processMessage(data) {
@@ -88,6 +97,16 @@ wss.on('connection', function(ws) {
 			case 'bc':
 				console.log(data);
 				sendToReceivers(data);
+
+				captures.push({
+					r: +d[1],
+					g: +d[2],
+					b: +d[3],
+					time: Date.now()
+				});
+				// Persist if neccessary
+				fs.writeFileSync(CAPTURES_FILE, JSON.stringify(captures),'utf8');
+
 				break;
 			case 'ts': // receives touch data
 			case 'tm':
