@@ -21,7 +21,7 @@ var CAPTURES_FILE = 'captures.json';
 var TYPE_RECEIVER = 'receiver', // Canvas App
 	TYPE_TRANSMITTER = 'transmitter'; // Emo App
 
-// Recover
+// Recover data after restart
 try {
 	var json = fs.readFileSync(CAPTURES_FILE, 'utf8');
 	captures = JSON.parse(json);
@@ -72,16 +72,19 @@ wss.on('connection', function(ws) {
 	if (info.url == '/transmitter') {
 		ws.type = 'transmitter';
 		addTransmitter(ws);
-		sendToReceivers('t');
+		// sendToReceivers('t');
+
 	} else if (info.url == '/receiver') {
 		// receiver
 		addReceiver(ws);
 		ws.type = TYPE_RECEIVER;
 		console.log('Receiver connected.');
-		sendToTransmitters('t');
+		// sendToTransmitters('t');
+
+		ws.send('batch\n' + JSON.stringify(captures))
 	}
 
-	ws.send('r');
+	// ws.send('r');
 
 	ws.on('message', processMessage);
 
@@ -95,7 +98,7 @@ wss.on('connection', function(ws) {
 		var d = data.split('\n');
 		switch (d[0]) {
 			case 'bc':
-				console.log(data);
+				console.log('Received bird data', data);
 				sendToReceivers(data);
 
 				captures.push({
@@ -104,9 +107,9 @@ wss.on('connection', function(ws) {
 					b: +d[3],
 					time: Date.now()
 				});
+
 				// Persist if neccessary
 				fs.writeFileSync(CAPTURES_FILE, JSON.stringify(captures),'utf8');
-
 				break;
 			case 'ts': // receives touch data
 			case 'tm':

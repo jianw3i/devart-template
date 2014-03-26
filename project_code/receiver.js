@@ -2,22 +2,13 @@
 
 	"use strict";
 
-	var contact = window.contact || {}; // Namespace
-
 	var ws;
 
-	contact.Recevier = function(destination) {
-	}
-
-
 	window.addEventListener('load', function() {
-		// new contact.Recevier(location.hostname);
-		
+		// new contact.Recevier(location.hostname + ':20143');
 	});
 
-	// new contact.Recevier('localhost:20143');
-
-	connect('localhost:20143');
+	connect(location.hostname + ':20143');
 
 	function connect(destination) {
 
@@ -144,6 +135,15 @@
 				console.log(data);
 				// showBirds(kkk++, true);
 				setBird(kkk++, d[1], d[2], d[3], true);
+				break;
+			case 'batch':
+				var captures = JSON.parse(d[1]);
+				var tmpBird;
+				for (var i = 0; i < captures.length; i++) {
+					tmpBird = captures[i];
+					setBird(kkk++, tmpBird.r, tmpBird.g, tmpBird.b, true);
+				}
+				
 				break;
 			case 'p':
 				ws.send('pp\n'  + d[1]);
