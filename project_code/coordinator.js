@@ -99,14 +99,16 @@ wss.on('connection', function(ws) {
 		switch (d[0]) {
 			case 'bc':
 				console.log('Received bird data', data);
-				sendToReceivers(data);
 
-				captures.push({
+				var msg = {
 					r: +d[1],
 					g: +d[2],
 					b: +d[3],
 					time: Date.now()
-				});
+				};
+
+				sendToReceivers('bc\n' + JSON.stringify(msg));
+				captures.push(msg);
 
 				// Persist if neccessary
 				fs.writeFileSync(CAPTURES_FILE, JSON.stringify(captures),'utf8');

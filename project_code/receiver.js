@@ -132,17 +132,26 @@
 
 		switch (d[0]) {
 			case 'bc':
-				console.log(data);
+				var tmpBird = JSON.parse(d[1]);
 				// showBirds(kkk++, true);
-				setBird(kkk++, d[1], d[2], d[3], true);
+				console.log(tmpBird);
+				setBird(kkk++, tmpBird.r, tmpBird.g, tmpBird.b, true);
 				break;
 			case 'batch':
 				var captures = JSON.parse(d[1]);
 				var tmpBird;
 				for (var i = 0; i < captures.length; i++) {
 					tmpBird = captures[i];
-					setBird(kkk++, tmpBird.r, tmpBird.g, tmpBird.b, true);
+
+					(function(tmpBird) {
+						setTimeout(function() {
+							setBird(kkk++, tmpBird.r, tmpBird.g, tmpBird.b, true);
+						}, i * 1000)
+					})(tmpBird);
+					
 				}
+
+				console.log(captures.length);
 				
 				break;
 			case 'p':
