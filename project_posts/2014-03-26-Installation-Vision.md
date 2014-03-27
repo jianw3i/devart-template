@@ -2,6 +2,9 @@
 
 We didn't have a time to model the installation, so we'll just describe the installation.
 
+![installation vision](../project_images/installation.jpg "Installation Vision")
+
+
 ## Projector + Screen
 
 The center of the installation is a projection of the 3D rendered birds on a large screen. The flying birds represent the emotions of the world. The various colours indicate the different emotions of people living around us.
