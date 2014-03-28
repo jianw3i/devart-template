@@ -190,7 +190,7 @@ function ColorPicker(width, height) {
 		dx = midx - w;
 		dy = midy - h;
 
-		if (true && !lenient) {
+		if (!lenient) {
 			
 			distance = Math.sqrt( dx * dx + dy * dy );
 			
@@ -200,7 +200,7 @@ function ColorPicker(width, height) {
 			s = distance / radius;
 
 		} else {
-			s = 0.5;
+			s = 0.9;
 		}
 
 		hue = Math.atan2(dy, dx) / Math.PI / 2 + 0.5;
@@ -258,9 +258,9 @@ function ColorPicker(width, height) {
 	setInterval(draw, 60);
 
 
-	document.addEventListener( 'mousemove', function ( event ) {
-		touchAt(event.pageX, event.pageY);
-	}, false );
+	// document.addEventListener( 'mousemove', function ( event ) {
+	// 	touchAt(event.pageX, event.pageY);
+	// }, false );
 
 	document.addEventListener( 'mousedown', function ( event ) {
 		touchAt(event.pageX, event.pageY);

@@ -143,12 +143,21 @@ function SimulationRenderer(WIDTH, renderer) {
 		rtPosition2 = rtPosition1.clone();
 		rtVelocity1 = getRenderTarget( THREE.RGBAFormat );
 		rtVelocity2 = rtVelocity1.clone();
-
 		simulator.renderTexture(dtPosition, rtPosition1);
 		simulator.renderTexture(rtPosition1, rtPosition2);
-
 		simulator.renderTexture(dtVelocity, rtVelocity1);
 		simulator.renderTexture(rtVelocity1, rtVelocity2);
+
+
+		// rtPosition1 = getRenderTarget( THREE.RGBAFormat );
+		// rtPosition2 = rtPosition1.clone();
+		// rtVelocity1 = rtPosition1.clone();
+		// rtVelocity2 = rtPosition1.clone();
+
+		// simulator.renderTexture(dtPosition, rtPosition1);
+		// simulator.renderTexture(dtPosition, rtPosition2);
+		// simulator.renderTexture(dtVelocity, rtVelocity1);
+		// simulator.renderTexture(dtVelocity, rtVelocity2);
 
 		simulator.velocityUniforms.testing.value = 10;
 	}
@@ -207,7 +216,7 @@ function SimulationRenderer(WIDTH, renderer) {
 	}
 
 	tmpPosition = new THREE.Vector3(),
-		tmpVelocity = new THREE.Vector3();
+	tmpVelocity = new THREE.Vector3();
 
 
 	this.simulate = function( delta ) {
@@ -227,11 +236,11 @@ function SimulationRenderer(WIDTH, renderer) {
 		if (flipflop) {
 			this.renderRenderAs(encodeShader, this.currentPosition, encodedFloats);
 			read(0, 0, WIDTH, WIDTH);
-			tmpPosition.set(pixels32[0], pixels32[1], pixels32[2]);
+			tmpPosition.set(pixels32[lastIndex * 4 + 0], pixels32[lastIndex * 4 + 1], pixels32[lastIndex * 4 + 2]);
 		} else {
 			this.renderRenderAs(encodeShader, this.currentVelocity, encodedFloats);
 			read(0, 0, WIDTH, WIDTH);
-			tmpVelocity.set(pixels32[0], pixels32[1], pixels32[2]);
+			tmpVelocity.set(pixels32[lastIndex * 4 + 0], pixels32[lastIndex * 4 + 1], pixels32[lastIndex * 4 + 2]);
 		}
 
 		
@@ -313,10 +322,12 @@ function SimulationRenderer(WIDTH, renderer) {
 			var y = Math.random() - 0.5;
 			var z = Math.random() - 0.5;
 
-			a[ k + 0 ] = x * 10;
-			a[ k + 1 ] = y * 10;
-			a[ k + 2 ] = z * 10;
-			a[ k + 3 ] = 0;
+			x = y=  z = 1;
+
+			a[ k + 0 ] = x * 100;
+			a[ k + 1 ] = y * 100;
+			a[ k + 2 ] = z * 100;
+			a[ k + 3 ] = 1;
 
 		}
 

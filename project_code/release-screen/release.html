@@ -1,24 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>three.js canvas - geometry - birds</title>
+		<title>Free as birds, Emo app</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<!-- <link href='http://fonts.googleapis.com/css?family=Lato:100,300' rel='stylesheet' type='text/css'> -->
-		<!-- <link href='http://fonts.googleapis.com/css?family=Varela+Round' rel='stylesheet' type='text/css'> -->
+		<link href='http://fonts.googleapis.com/css?family=Varela+Round' rel='stylesheet' type='text/css'>
 		<style>
-		/*@font-face {
-  			font-family: 'Lato';
-		  font-style: normal;
-		  font-weight: 100;
-		  src: local('Lato Hairline'), local('Lato-Hairline'), url(Lato-Hairline.woff) format('woff');
-		}
-		@font-face {
-		  font-family: 'Lato';
-		  font-style: normal;
-		  font-weight: 300;
-		  src: local('Lato Light'), local('Lato-Light'), url(Lato-Light.woff) format('woff');
-		}*/
+
 
 		body {
 
@@ -29,15 +17,15 @@
 */
 
 			/*font-family: 'Varela Round', sans-serif;*/
-			/*font-family: 'Lato', 'Helvetica Light', sans-serif;*/
-			font-family: 'Helvetica Light', sans-serif;
+			font-family: 'Lato', 'Helvetica Light', sans-serif;
+			/*font-family: 'Helvetica Light', sans-serif;*/
 /*			font-family: "Helvetica Neue";
 			font-weight: lighter;*/
 			/*font-weight: 100;*/
 
 			text-align: center;
 			color: #fff;
-
+						
 			font-size: 36px;
 			text-align:center;
 
@@ -105,7 +93,7 @@
 		}
 
 		#screen2 {
-
+			
 		}
 
 		.screens {
@@ -132,7 +120,12 @@
 		<div class="question" id="prompt">Swipe up to release bird</div>
 	</div>
 
+	<div id="screen3" class="screens">
+		<div class="question" id="prompt">Bird is flying... 
+		<br/>
+		(touch to disturb birds)</div>
 
+	</div>
 
 		<div id="container"></div>
 
@@ -142,6 +135,7 @@
 		<script src="../libs/stats.min.js"></script>
 		<script src="colorpicker.js"></script>
 		<script src="swipe.js"></script>
+		<script src="../transmitter.js"></script>
 
 
 		<script>
@@ -476,6 +470,18 @@
 			init();
 			animate();
 
+			function onSwipe() {
+				console.log('swipe detected!!!');
+				// Do something with bird.material.color
+
+				var color = bird.material.color;
+				console.log(color);
+
+				send('bc\n' + color.r + '\n' + color.g + '\n' + color.b);
+
+				gotoScreen(3);
+			}
+
 			function setupScenes() {
 
 				var hasTouch = 'ontouchstart' in document.body;
@@ -489,18 +495,9 @@
 				birdCanvas.height = innerHeight;
 
 				var swipeDetector = new TouchSwipe();
-				var flapSound = new Audio("../birds/flyaway.wav");
 
-				swipeDetector.setListener( function() {
-					console.log('swipe detected!!!');
-					// Do something with bird.material.color
-
-					// make flutter sound
-					flapSound.play(); // has to be done in an UI event callback
-
-					gotoScreen(0);
-				});
-
+				swipeDetector.setListener( onSwipe );
+				
 				/*
 				// var devicePixelRatio, backingStoreRatio;
 				// see http://www.html5rocks.com/en/tutorials/canvas/hidpi/ and http://www.khronos.org/webgl/wiki/HandlingHighDPI for more info
@@ -519,7 +516,7 @@
 				console.log('devicePixelRatio, backingStoreRatio', devicePixelRatio, backingStoreRatio);
 
 
-
+				
 				if (devicePixelRatio !== backingStoreRatio) {
 
 					// console.log(birdCanvas, ratio)
@@ -560,7 +557,7 @@
 				scenes[0] = {
 					load: function() {
 						document.getElementById('screen0').style.display = 'block';
-
+						
 						// show wireframed bird
 						bird.material = wireframe;
 						camera.setLens(40)
@@ -611,6 +608,23 @@
 					}
 				}
 
+				scenes[3] = {
+					load: function() {
+						setTimeout(function() {
+							gotoScreen(0);
+						}, 5000);
+						birdCanvas.style.display = 'none'
+						document.getElementById('screen3').style.display = 'block';
+
+					},
+
+					unload: function() {
+						birdCanvas.style.display = 'block'
+						document.getElementById('screen3').style.display = 'none';
+
+					}
+				}
+
 			}
 
 			function init() {
@@ -628,12 +642,12 @@
 					side: THREE.DoubleSide,
 					wireframe: true,
 					// shading: THREE.FlatShading,
-					overdraw: true
+					overdraw: true 
 				 } )
 
 				lambert = new THREE.MeshLambertMaterial( { color: 0xffffff, transparent: true,
 					side: THREE.DoubleSide, opacity: 0.9,
-					shading: THREE.FlatShading, overdraw: true
+					shading: THREE.FlatShading, overdraw: true 
 
 				 } )
 
@@ -657,7 +671,7 @@
 					bird.position = boids[ i ].position;
 
 
-
+					
 					scene.add( bird );
 
 
@@ -705,7 +719,7 @@
 				}
 
 				// lines
-				//  vertexColors: THREE.VertexColors,
+				//  vertexColors: THREE.VertexColors, 
 
 				var line = new THREE.Line( lines, new THREE.LineBasicMaterial( {color: 0xffffff, opacity: 0.8 } ) );
 				scene.add( line );
@@ -798,7 +812,7 @@
 
 					event.preventDefault();
 
-
+					
 					vector.set( event.touches[ 0 ].pageX - SCREEN_WIDTH_HALF, - event.touches[ 0 ].pageY + SCREEN_HEIGHT_HALF, 0 );
 
 					reactBird();
