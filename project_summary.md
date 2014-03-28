@@ -7,28 +7,24 @@
 
 ## Description
 "Emotions in Motion" is currently a work-in-progress experiment to invoke and express emotions using motion + art + code.
-(find out more in the project posts for now)
+
+The project explore our relationship with emotions, colours and sounds. And also the place of our emotions in the world of emotions.
 
 ## Link to Prototype
-Prototype to come. Look into `/project_code/` for now.
+- [Emotion Release Screen](./project_code/release-screen/release.html)
+- [Main Screen](./project_code/main-screen/screen.html)
 
 ## Example Code
-```
-// Code to come. Look into `/project_code/` for now.
-
-```
+The entire project is implemented in HTML/JS/CSS technologies. The project can be easily launched by opening the relevant HTML pages in modern browsers. :)
 
 ## Links to External Libraries
 External libraries used on this project.
 
 [Three.js](http://threejs.org "Three.js") - for 3D rendering in the browser
 [xgui.js](http://oos.moxiecode.com/js_canvas/xgui/ "xgui.js") - controls for experimentation
-  
 
 ## Images & Videos
 
 Emo Module
 ![Emo UI Mock 1](project_images/draft_picking_emotions_1.jpg "Emo UI Mock 1")
 Controls for Synthesized Birds
-
-More to be assembled later. See blog posts below for now.

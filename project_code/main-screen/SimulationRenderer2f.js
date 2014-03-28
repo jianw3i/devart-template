@@ -216,7 +216,7 @@ function SimulationRenderer(WIDTH, renderer) {
 
 			simulator.renderVelocity( rtPosition1, rtVelocity1, rtVelocity2, delta );
 			simulator.renderPosition( rtPosition1, rtVelocity2, rtPosition2, delta );
-
+			
 		} else {
 
 			simulator.renderVelocity( rtPosition2, rtVelocity2, rtVelocity1, delta );
@@ -234,21 +234,21 @@ function SimulationRenderer(WIDTH, renderer) {
 			tmpVelocity.set(pixels32[0], pixels32[1], pixels32[2]);
 		}
 
-
+		
 
 		flipflop = !flipflop;
 
 	}
 
-
+	
 
 
 	function read(x, y, width, height) {
 
 		// if (Math.random() > 0.1 ) return;
-
+		
 		gl.readPixels(x, y, width * 2, height * 2, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-
+		
 
 	}
 

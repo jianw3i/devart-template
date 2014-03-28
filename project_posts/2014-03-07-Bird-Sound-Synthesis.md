@@ -25,4 +25,4 @@ Envelopes are typically used to adjust the parameters (like `gain`) of other pri
 Using a combination of AM and FM and Envelopes as defined by Obiwannab, we implemented a similar structure using the WebAudioAPI.
 
 ## Presets
-The various parameters defined by Obiwannab mimic the sounds of different birds. While the parameters need to be tweaked in the WebAudioAPI structure, they give a great ball park of what would sound good. 
+The various parameters defined by Obiwannab mimic the sounds of different birds. While the parameters need to be tweaked in the WebAudioAPI structure, they give a great ball park of what would sound good.
