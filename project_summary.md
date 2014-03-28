@@ -42,6 +42,8 @@ External libraries used on this project.
 [xgui.js](http://oos.moxiecode.com/js_canvas/xgui/ "xgui.js") - controls for experimentation
 
 ## Images & Videos
+Video demo of prototype
+http://youtu.be/Vs8poyoFYy0
 
 
 Emo Module
