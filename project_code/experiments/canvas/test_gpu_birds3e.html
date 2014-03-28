@@ -189,7 +189,9 @@
 				// delta +
 				phase = mod( ( phase + 
 					length( velocity.xz ) * delta * 2. +
-					max( velocity.y, 0.0 ) * delta * 6. ), 62.83 );
+					max( velocity.y, 0.0 ) * delta * 2. ), 62.83 );
+
+				// 2 6
 
 				gl_FragColor = vec4( position + velocity * delta * 15. , phase );
 
@@ -266,7 +268,11 @@
 				vec3 selfVelocity = texture2D( textureVelocity, uv ).xyz;
 				vec4 selfColor = texture2D( birdColors, uv );
 
-				if (texture2D( birdColors, uv ).a < 1.) discard;
+				if (texture2D( birdColors, uv ).a < 1.) {
+					// discard;
+					gl_FragColor = vec4( 0., 0., 0., 1.0 );
+					return;
+				}
 
 				float dist;
 				vec3 dir; // direction
@@ -309,16 +315,16 @@
 
 				// Attract flocks to the center
 				vec3 central = vec3( 0., 0., 0. );
-				central += (selfColor.xyz - 0.5) * UPPER_BOUNDS * 0.5;
+				central += (selfColor.xyz - 0.5) * UPPER_BOUNDS * 0.25;
 				dir = selfPosition - central;
 				dist = length( dir );
 				dir.y *= 2.5;
 				velocity -= normalize( dir ) * delta * 5.; // 5
 
 
-				// velocity.x += 1.11 * (noise(vec3(0.005 * selfPosition.yz, 0.00004 * time + selfColor.r)) - 0.5);
-				// velocity.y += 1.11 * (noise(vec3(0.005 * selfPosition.xz, 0.00002 * time + selfColor.g)) - 0.5);
-				// velocity.z += 1.11 * (noise(vec3(0.005 * selfPosition.xy, 0.00004 * time + selfColor.b)) - 0.5);
+				// velocity.x += 0.01 * (noise(vec3(0.005 * selfPosition.yz, 0.00004 * time + selfColor.r)) - 0.5);
+				// velocity.y += 0.01 * (noise(vec3(0.005 * selfPosition.xz, 0.00002 * time + selfColor.g)) - 0.5);
+				// velocity.z += 0.01 * (noise(vec3(0.005 * selfPosition.xy, 0.00004 * time + selfColor.b)) - 0.5);
 
 				for (float y=0.0;y<height;y++) {
 					for (float x=0.0;x<width;x++) {
@@ -670,7 +676,55 @@
 
 				effectBlend = new THREE.ShaderPass( THREE.BlendShader, "tDiffuse1" );
 
-				effectBlend2 = new THREE.ShaderPass( THREE.BlendShader, "tDiffuse1" );
+			THREE.BlendShader2 = {
+
+				uniforms: {
+
+					"tDiffuse1": { type: "t", value: null },
+					"tDiffuse2": { type: "t", value: null },
+					"mixRatio":  { type: "f", value: 0.5 },
+					"opacity":   { type: "f", value: 1.0 }
+
+				},
+
+				vertexShader: [
+
+					"varying vec2 vUv;",
+
+					"void main() {",
+
+						"vUv = uv;",
+						"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+
+					"}"
+
+				].join("\n"),
+
+				fragmentShader: [
+
+					"uniform float opacity;",
+					"uniform float mixRatio;",
+
+					"uniform sampler2D tDiffuse1;",
+					"uniform sampler2D tDiffuse2;",
+
+					"varying vec2 vUv;",
+
+					"void main() {",
+
+						"vec4 texel1 = texture2D( tDiffuse1, vUv );",
+						"vec4 texel2 = texture2D( tDiffuse2, vUv );",
+
+						 "gl_FragColor = vec4( texel1.xyz * texel2.xyz, mixRatio );",
+
+					"}"
+
+				].join("\n")
+
+			};
+
+
+				effectBlend2 = new THREE.ShaderPass( THREE.BlendShader2, "tDiffuse1" );
 
 				effectFXAA = new THREE.ShaderPass( THREE.FXAAShader );
 				var effectVignette = new THREE.ShaderPass( THREE.VignetteShader );
@@ -691,7 +745,7 @@
 
 				// hblur.uniforms[ 'r' ].value = vblur.uniforms[ 'r' ].value = 0.35;
 				effectVignette.uniforms[ "offset" ].value = 0.85;
-				effectVignette.uniforms[ "darkness" ].value = 0.5;
+				effectVignette.uniforms[ "darkness" ].value = 0.3;
 
 				// motion blur
 
@@ -719,7 +773,7 @@
 				composer.addPass( effectFXAA );
 
 				// composer.addPass( effectBloom );
-				composer.addPass( effectBleach );
+				// composer.addPass( effectBleach );
 
 				// composer.addPass( hblur );
 				// composer.addPass( vblur );
@@ -733,7 +787,10 @@
 				document.body.appendChild( container );
 
 				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.001, 150000 );
-				camera.position.z = 350;
+				// camera.position.z = 350;
+
+				camera.setLens(40)
+				camera.position.z = 850;
 
 				scene = new THREE.Scene();
 
@@ -945,6 +1002,8 @@
 
 			}
 
+			var cameraMode = 'follow';
+
 			function render() {
 				now = performance.now()
 				delta = (now - last) / 1000;
@@ -971,7 +1030,7 @@
 					flock.velocity.z = tmpVelocity.z;
 
 					if (Math.random() < 0.05) {
-						// flock.chirp();
+						flock.chirp();
 					}
 				}
 
@@ -993,14 +1052,23 @@
 				
 				// camera.position.set(pixels32[4], pixels32[5], pixels32[6]);
 
+
+				switch(cameraMode) {
+					case 'follow':
+						camera.lookAt(target);
+						break;
+					case 'center':
+						tmp.set(0, 0, 0);
+						camera.lookAt(tmp);
+						break;
+				}
+
 				// camera.position.set(0, 0, 0);
-				// camera.lookAt(target);
+				
 
 				// camera.lookAt(tmpPosition);
 
 				// camera.position.copy(target);
-				// tmp.set(0, 0, 0);
-				// camera.lookAt(tmp);
 
 				// camera.position.set(0, 0, 0);
 				// camera.lookAt(target);
@@ -1040,10 +1108,12 @@
 
 
 			var tmpColor = new THREE.Color();
-			var BIRDS_TIME_TO_LIVE = 15000;
+			var BIRDS_TIME_TO_LIVE = 10000; //4 * 60 * 1000;
+			var no = 64;
+
 			function setBird(index, r, g, b, show) {
-				var no = 8;
 				index %= BIRDS / no;
+				lastIndex = index * no;
 				// console.log('setBird', index)
 				for (var i = 0; i<no; i++) {
 					tmpColor.setRGB(r, g, b);
@@ -1054,7 +1124,7 @@
 			}
 
 			function setBird0(index, r, g, b, show) {
-				lastIndex = index;
+				
 				var buffer = simulator.dtColors.image.data;
 				buffer[index * 4 + 0] = +r;
 				buffer[index * 4 + 1] = +g;

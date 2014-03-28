@@ -4,21 +4,9 @@
 		<title>three.js canvas - geometry - birds</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<!-- <link href='http://fonts.googleapis.com/css?family=Lato:100,300' rel='stylesheet' type='text/css'> -->
-		<!-- <link href='http://fonts.googleapis.com/css?family=Varela+Round' rel='stylesheet' type='text/css'> -->
+		<link href='http://fonts.googleapis.com/css?family=Varela+Round' rel='stylesheet' type='text/css'>
 		<style>
-		/*@font-face {
-  			font-family: 'Lato';
-		  font-style: normal;
-		  font-weight: 100;
-		  src: local('Lato Hairline'), local('Lato-Hairline'), url(Lato-Hairline.woff) format('woff');
-		}
-		@font-face {
-		  font-family: 'Lato';
-		  font-style: normal;
-		  font-weight: 300;
-		  src: local('Lato Light'), local('Lato-Light'), url(Lato-Light.woff) format('woff');
-		}*/
+
 
 		body {
 
@@ -29,8 +17,8 @@
 */
 
 			/*font-family: 'Varela Round', sans-serif;*/
-			/*font-family: 'Lato', 'Helvetica Light', sans-serif;*/
-			font-family: 'Helvetica Light', sans-serif;
+			font-family: 'Lato', 'Helvetica Light', sans-serif;
+			/*font-family: 'Helvetica Light', sans-serif;*/
 /*			font-family: "Helvetica Neue";
 			font-weight: lighter;*/
 			/*font-weight: 100;*/
@@ -132,7 +120,12 @@
 		<div class="question" id="prompt">Swipe up to release bird</div>
 	</div>
 
+	<div id="screen3" class="screens">
+		<div class="question" id="prompt">Bird is flying... 
+		<br/>
+		(touch to disturb birds)</div>
 
+	</div>
 
 		<div id="container"></div>
 
@@ -486,7 +479,7 @@
 
 				send('bc\n' + color.r + '\n' + color.g + '\n' + color.b);
 
-				gotoScreen(0);
+				gotoScreen(3);
 			}
 
 			function setupScenes() {
@@ -612,6 +605,23 @@
 						document.getElementById('screen2').style.display = 'none';
 
 						swipeDetector.setEnabled( false );
+					}
+				}
+
+				scenes[3] = {
+					load: function() {
+						setTimeout(function() {
+							gotoScreen(0);
+						}, 5000);
+						birdCanvas.style.display = 'none'
+						document.getElementById('screen3').style.display = 'block';
+
+					},
+
+					unload: function() {
+						birdCanvas.style.display = 'block'
+						document.getElementById('screen3').style.display = 'none';
+
 					}
 				}
 

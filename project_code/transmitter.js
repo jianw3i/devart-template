@@ -60,8 +60,8 @@ function convert(touches) {
 	var a = [];
 	for (i=0, len = touches.length; i<len; i++) {
 		touch = touches[i];
-		px = touch.pageX;
-		py = touch.pageY;
+		px = touch.pageX / innerWidth;
+		py = touch.pageY / innerHeight;
 		a.push(px, py);
 	}
 
@@ -75,10 +75,10 @@ function convert(touches) {
 // 	send('te\n' + convert(touches));
 // }, false);
 
-// window.addEventListener('touchmove', function(event) {
-// 	event.preventDefault();
-// 	send('tm\n' + convert(touches));
-// }, false);
+window.addEventListener('touchmove', function(event) {
+	event.preventDefault();
+	send('tm\n' + convert(touches));
+}, false);
 
 // window.addEventListener('touchstart', function(event) {
 // 	touches = event.touches;
