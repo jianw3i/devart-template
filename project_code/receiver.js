@@ -146,7 +146,7 @@
 					(function(tmpBird) {
 						setTimeout(function() {
 							setBird(kkk++, tmpBird.r, tmpBird.g, tmpBird.b, true);
-						}, i * 1000)
+						}, i * 2000)
 					})(tmpBird);
 					
 				}
